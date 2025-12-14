@@ -82,7 +82,8 @@ func (at *AuthTransport) Authorize(req *http.Request) error {
 	for _, cookie := range res.Cookies() {
 		if cookie.Name == "x-ui" {
 			at.cookie = cookie
+			return nil
 		}
 	}
-	return nil
+	return fmt.Errorf("x-ui cookie not found")
 }
