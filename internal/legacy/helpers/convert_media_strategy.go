@@ -10,7 +10,13 @@ import (
 	legacy "github.com/ailinykh/pullanusbot/v2/internal/legacy/core"
 )
 
-func CreateConvertMediaStrategy(l core.Logger, sms legacy.ISendMediaStrategy, fd legacy.IFileDownloader, vf legacy.IVideoFactory, vc legacy.IVideoConverter) *ConvertMediaStrategy {
+func CreateConvertMediaStrategy(
+	l core.Logger,
+	sms legacy.ISendMediaStrategy,
+	fd legacy.IFileDownloader,
+	vf legacy.IVideoFactory,
+	vc legacy.IVideoConverter,
+) *ConvertMediaStrategy {
 	return &ConvertMediaStrategy{l, sms, fd, vf, vc}
 }
 
