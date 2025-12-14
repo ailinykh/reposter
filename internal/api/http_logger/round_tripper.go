@@ -26,6 +26,12 @@ type LoggingRoundTripper struct {
 }
 
 func (l *LoggingRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
+	body, err := io.ReadAll(req.Body)
+	if err == nil {
+		req.Body = io.NopCloser(bytes.NewBuffer(body))
+	}
+	req.Body.Close()
+
 	resp, err := l.rt.RoundTrip(req)
 
 	if err != nil {
@@ -50,7 +56,7 @@ func (l *LoggingRoundTripper) RoundTrip(req *http.Request) (*http.Response, erro
 	}
 
 	parts := strings.Split(req.URL.Path, "/")
-	err = l.ls.LogRecord(parts[len(parts)-1], rawJson)
+	err = l.ls.LogRecord(parts[len(parts)-1], string(body), rawJson)
 	if err != nil {
 		l.l.Error("failed to save logs", "error", err, "path", req.URL.Path, "data", data)
 	}

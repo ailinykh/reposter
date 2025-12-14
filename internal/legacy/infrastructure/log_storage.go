@@ -29,12 +29,13 @@ type LogStorage struct {
 type LogRecord struct {
 	ID        int64 `gorm:"primaryKey"`
 	Method    string
+	Body      string
 	Data      string
 	CreatedAt time.Time `gorm:"autoUpdateTime"`
 }
 
-func (s *LogStorage) LogRecord(method string, data string) error {
-	logRecord := LogRecord{Method: method, Data: data}
+func (s *LogStorage) LogRecord(method, body, data string) error {
+	logRecord := LogRecord{Method: method, Body: body, Data: data}
 	err := s.conn.Create(&logRecord).Error
 	if err != nil {
 		s.l.Error(err)
