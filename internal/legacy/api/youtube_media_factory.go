@@ -94,7 +94,7 @@ func (y *YoutubeMediaFactory) CreateVideo(id string) (*legacy.Video, error) {
 	out, err := exec.Command("/bin/sh", "-c", cmd).CombinedOutput()
 	if err != nil {
 		y.l.Error(err)
-		return nil, fmt.Errorf(string(out))
+		return nil, fmt.Errorf("%s", out)
 	}
 
 	thumb, err := y.makeThumb(resp, video)

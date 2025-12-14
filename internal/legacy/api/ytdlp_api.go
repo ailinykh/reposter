@@ -38,7 +38,7 @@ func (api *YtDlpApi) Get(url string) (*YtDlpResponse, error) {
 	out, err := exec.Command("/bin/sh", "-c", cmd).CombinedOutput()
 	if err != nil {
 		api.l.Error(err)
-		return nil, fmt.Errorf(string(out))
+		return nil, fmt.Errorf("%s", out)
 	}
 
 	var resp YtDlpResponse
