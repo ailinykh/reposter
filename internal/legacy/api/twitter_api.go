@@ -123,7 +123,7 @@ func (api *TwitterAPI) getTweetFromGraphQL(tweetID string) (*Tweet, error) {
 		return nil, err
 	}
 	featuresString := url.QueryEscape(string(data))
-	url := fmt.Sprintf("https://api.twitter.com/graphql/5GOHgZe-8U2j5sVHQzEm9A/TweetResultByRestId?variables=%s&features=%s", variables, featuresString)
+	url := fmt.Sprintf("https://api.x.com/graphql/5GOHgZe-8U2j5sVHQzEm9A/TweetResultByRestId?variables=%s&features=%s", variables, featuresString)
 
 	req, _ := http.NewRequest("GET", url, nil)
 	req.Header.Add("authorization", "Bearer "+api.credentials.bearer_token)
@@ -167,7 +167,7 @@ func (api *TwitterAPI) getTweetFromGraphQL(tweetID string) (*Tweet, error) {
 
 func (api *TwitterAPI) getTweetByIdAndToken(tweetID string, creds TwitterApiCredentials) (*Tweet, error) {
 	client := http.DefaultClient
-	url := fmt.Sprintf("https://api.twitter.com/1.1/statuses/show.json?id=%s&tweet_mode=extended", tweetID)
+	url := fmt.Sprintf("https://api.x.com/1.1/statuses/show.json?id=%s&tweet_mode=extended", tweetID)
 	req, _ := http.NewRequest("GET", url, nil)
 	req.Header.Add("Authorization", "Bearer "+creds.bearer_token)
 	res, err := client.Do(req)

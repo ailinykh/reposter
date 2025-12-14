@@ -49,7 +49,7 @@ func Test_HandleText_FoundMultipleTweetLinks(t *testing.T) {
 
 func Test_HandleText_DoesNotRemoveOriginalMessage(t *testing.T) {
 	parser, _, bot := makeTwitterSUT()
-	m := makeTweetMessage("https://twitter.com/username/status/123456 and some other text")
+	m := makeTweetMessage("https://x.com/username/status/123456 and some other text")
 
 	parser.HandleText(m, bot)
 

@@ -23,7 +23,7 @@ func (tmf *TwitterMediaFactory) CreateMedia(tweetID string) ([]*legacy.Media, er
 		return nil, fmt.Errorf("failed to get tweet: %v", err)
 	}
 
-	url := "https://twitter.com/" + tweet.User.ScreenName + "/status/" + tweet.ID
+	url := "https://x.com/" + tweet.User.ScreenName + "/status/" + tweet.ID
 	media := tweet.ExtendedEntities.Media
 
 	if len(media) == 0 && tweet.QuotedStatus != nil && len(tweet.QuotedStatus.ExtendedEntities.Media) > 0 {
