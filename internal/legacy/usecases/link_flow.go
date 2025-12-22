@@ -6,8 +6,8 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/ailinykh/pullanusbot/v2/internal/core"
-	legacy "github.com/ailinykh/pullanusbot/v2/internal/legacy/core"
+	"github.com/ailinykh/reposter/v2/internal/core"
+	legacy "github.com/ailinykh/reposter/v2/internal/legacy/core"
 )
 
 // CreateLinkFlow is a basic LinkFlow factory

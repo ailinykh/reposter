@@ -3,7 +3,7 @@ package test_helpers
 import (
 	"fmt"
 
-	"github.com/ailinykh/pullanusbot/v2/internal/legacy/core"
+	"github.com/ailinykh/reposter/v2/internal/legacy/core"
 )
 
 // https://stackoverflow.com/questions/31794141/can-i-create-shared-test-utilities

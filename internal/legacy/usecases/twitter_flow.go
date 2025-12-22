@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"regexp"
 
-	"github.com/ailinykh/pullanusbot/v2/internal/core"
-	legacy "github.com/ailinykh/pullanusbot/v2/internal/legacy/core"
+	"github.com/ailinykh/reposter/v2/internal/core"
+	legacy "github.com/ailinykh/reposter/v2/internal/legacy/core"
 )
 
 type ITweetHandler interface {

@@ -10,15 +10,15 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/ailinykh/pullanusbot/v2/internal/api/http_logger"
-	"github.com/ailinykh/pullanusbot/v2/internal/api/image_uploader"
-	"github.com/ailinykh/pullanusbot/v2/internal/api/logger"
-	"github.com/ailinykh/pullanusbot/v2/internal/api/xui"
-	"github.com/ailinykh/pullanusbot/v2/internal/legacy/api"
-	"github.com/ailinykh/pullanusbot/v2/internal/legacy/core"
-	"github.com/ailinykh/pullanusbot/v2/internal/legacy/helpers"
-	"github.com/ailinykh/pullanusbot/v2/internal/legacy/infrastructure"
-	"github.com/ailinykh/pullanusbot/v2/internal/legacy/usecases"
+	"github.com/ailinykh/reposter/v2/internal/api/http_logger"
+	"github.com/ailinykh/reposter/v2/internal/api/image_uploader"
+	"github.com/ailinykh/reposter/v2/internal/api/logger"
+	"github.com/ailinykh/reposter/v2/internal/api/xui"
+	"github.com/ailinykh/reposter/v2/internal/legacy/api"
+	"github.com/ailinykh/reposter/v2/internal/legacy/core"
+	"github.com/ailinykh/reposter/v2/internal/legacy/helpers"
+	"github.com/ailinykh/reposter/v2/internal/legacy/infrastructure"
+	"github.com/ailinykh/reposter/v2/internal/legacy/usecases"
 )
 
 func main() {
@@ -38,7 +38,7 @@ func main() {
 		cancel()
 	}()
 
-	dbFile := path.Join(workingDir, "pullanusbot.db")
+	dbFile := path.Join(workingDir, "reposter.db")
 
 	settingsProvider := infrastructure.CreateSettingsStorage(dbFile)
 	boolSettingProvider := helpers.CreateBoolSettingProvider(settingsProvider)

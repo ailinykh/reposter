@@ -1,6 +1,6 @@
 package test_helpers
 
-import "github.com/ailinykh/pullanusbot/v2/internal/legacy/core"
+import "github.com/ailinykh/reposter/v2/internal/legacy/core"
 
 func CreateMediaFactory() *FakeMediaFactory {
 	return &FakeMediaFactory{[]core.URL{}}

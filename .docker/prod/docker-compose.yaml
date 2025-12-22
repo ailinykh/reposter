@@ -1,12 +1,12 @@
 version: '2'
 services:
   bot:
-    image: ailinykh/pullanusbot
-    container_name: pullanusbot
+    image: ailinykh/reposter
+    container_name: reposter
     environment:
       BOT_TOKEN: 12345678:XXXXXXXXxxxxxxxxXXXXXXXXxxxxxxxxXXX
       ADMIN_CHAT_ID: 1488
       AMQP_URL: amqp://guest:guest@localhost:5672/
     volumes:
-      - ./pullanusbot-data:/usr/local/share/pullanusbot-data
+      - ./reposter-data:/usr/local/share/reposter-data
     restart: always

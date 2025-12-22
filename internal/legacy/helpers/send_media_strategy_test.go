@@ -3,9 +3,9 @@ package helpers_test
 import (
 	"testing"
 
-	"github.com/ailinykh/pullanusbot/v2/internal/legacy/core"
-	"github.com/ailinykh/pullanusbot/v2/internal/legacy/helpers"
-	"github.com/ailinykh/pullanusbot/v2/internal/legacy/test_helpers"
+	"github.com/ailinykh/reposter/v2/internal/legacy/core"
+	"github.com/ailinykh/reposter/v2/internal/legacy/helpers"
+	"github.com/ailinykh/reposter/v2/internal/legacy/test_helpers"
 	"github.com/stretchr/testify/assert"
 )
 

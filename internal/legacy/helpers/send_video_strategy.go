@@ -3,7 +3,7 @@ package helpers
 import (
 	"fmt"
 
-	"github.com/ailinykh/pullanusbot/v2/internal/legacy/core"
+	"github.com/ailinykh/reposter/v2/internal/legacy/core"
 )
 
 func CreateSendVideoStrategy() core.ISendVideoStrategy {

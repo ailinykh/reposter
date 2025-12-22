@@ -1,8 +1,8 @@
-# pullanusbot
+# reposter
 
-[![Build Status](https://github.com/ailinykh/pullanusbot/workflows/build/badge.svg)](https://github.com/ailinykh/pullanusbot/actions?query=workflow%3Abuild)
-[![Go Report Card](https://goreportcard.com/badge/github.com/ailinykh/pullanusbot)](https://goreportcard.com/report/github.com/ailinykh/pullanusbot)
-![GitHub](https://img.shields.io/github/license/ailinykh/pullanusbot.svg)
+[![Build Status](https://github.com/ailinykh/reposter/workflows/build/badge.svg)](https://github.com/ailinykh/reposter/actions?query=workflow%3Abuild)
+[![Go Report Card](https://goreportcard.com/badge/github.com/ailinykh/reposter)](https://goreportcard.com/report/github.com/ailinykh/reposter)
+![GitHub](https://img.shields.io/github/license/ailinykh/reposter.svg)
 
 This bot helps your telegram chat consume content in a more native way.
 
@@ -35,8 +35,8 @@ brew install go ffmpeg yt-dlp
 Clone the repository:
 
 ```shell
-git clone https://github.com/ailinykh/pullanusbot.git
-cd pullanusbot
+git clone https://github.com/ailinykh/reposter.git
+cd reposter
 ```
 
 Install Go dependencies:
@@ -45,7 +45,7 @@ Install Go dependencies:
 go mod download
 ```
 
-Obtain your bot token from [@BotFather](https://t.me/BotFather) and your Telegram ID using the `/info` command from [@pullanusbot](https://t.me/pullanusbot).
+Obtain your bot token from [@BotFather](https://t.me/BotFather) and your Telegram ID using the `/info` command from [@reposter](https://t.me/reposter).
 
 Copy the example environment file:
 

@@ -2,24 +2,12 @@ version: "2"
 services:
   bot:
     build: ../..
-    container_name: pullanusbot
+    container_name: reposter
     environment:
       BOT_TOKEN: 12345678:XXXXXXXXxxxxxxxxXXXXXXXXxxxxxxxxXXX
       ADMIN_CHAT_ID: 1488
     volumes:
-      - ./.directory/pullanusbot-data:/usr/local/share/pullanusbot-data
-    restart: always
-
-  telegram-bot-api:
-    image: aiogram/telegram-bot-api:latest
-    environment:
-      TELEGRAM_API_ID: 1488
-      TELEGRAM_API_HASH: XXXXXXXXxxxxxxxxXXXXXXXXxxxxxxxxXXX
-      TELEGRAM_VERBOSITY: 1
-    volumes:
-      - ./.directory/telegram-bot-api-data:/var/lib/telegram-bot-api
-    ports:
-      - "8081:8081"
+      - ./.directory/reposter-data:/usr/local/share/reposter-data
     restart: always
 
   # Create service with RabbitMQ.
@@ -37,6 +25,5 @@ services:
       - dev-network
 
 networks:
-  # Create a new Docker network.
   dev-network:
     driver: bridge

@@ -1,6 +1,6 @@
 package usecases
 
-import "github.com/ailinykh/pullanusbot/v2/internal/legacy/core"
+import "github.com/ailinykh/reposter/v2/internal/legacy/core"
 
 func CreateUserStorageDecorator(primary core.IUserStorage, secondary core.IUserStorage) core.IUserStorage {
 	return &UserStorageDecorator{primary, secondary}

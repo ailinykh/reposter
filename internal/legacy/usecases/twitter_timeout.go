@@ -8,8 +8,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/ailinykh/pullanusbot/v2/internal/core"
-	legacy "github.com/ailinykh/pullanusbot/v2/internal/legacy/core"
+	"github.com/ailinykh/reposter/v2/internal/core"
+	legacy "github.com/ailinykh/reposter/v2/internal/legacy/core"
 )
 
 // CreateTwitterFlow is a basic TwitterFlow factory

@@ -3,9 +3,9 @@ package usecases
 import (
 	"os"
 
-	"github.com/ailinykh/pullanusbot/v2/internal/api/image_uploader"
-	"github.com/ailinykh/pullanusbot/v2/internal/core"
-	legacy "github.com/ailinykh/pullanusbot/v2/internal/legacy/core"
+	"github.com/ailinykh/reposter/v2/internal/api/image_uploader"
+	"github.com/ailinykh/reposter/v2/internal/core"
+	legacy "github.com/ailinykh/reposter/v2/internal/legacy/core"
 )
 
 // CreateImageFlow is a basic ImageFlow factory

@@ -6,8 +6,8 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/ailinykh/pullanusbot/v2/internal/core"
-	legacy "github.com/ailinykh/pullanusbot/v2/internal/legacy/core"
+	"github.com/ailinykh/reposter/v2/internal/core"
+	legacy "github.com/ailinykh/reposter/v2/internal/legacy/core"
 )
 
 func CreateYoutubeFlow(l core.Logger, mediaFactory legacy.IMediaFactory, videoFactory legacy.IVideoFactory, sendStrategy legacy.ISendVideoStrategy) *YoutubeFlow {

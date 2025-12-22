@@ -3,7 +3,7 @@ package infrastructure
 import (
 	"time"
 
-	"github.com/ailinykh/pullanusbot/v2/internal/core"
+	"github.com/ailinykh/reposter/v2/internal/core"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"

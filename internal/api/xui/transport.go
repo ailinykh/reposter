@@ -8,7 +8,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/ailinykh/pullanusbot/v2/internal/helpers"
+	"github.com/ailinykh/reposter/v2/internal/helpers"
 )
 
 func NewAuthTransport(login, password string) http.RoundTripper {

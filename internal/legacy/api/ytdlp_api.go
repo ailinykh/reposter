@@ -6,7 +6,7 @@ import (
 	"os/exec"
 	"strings"
 
-	"github.com/ailinykh/pullanusbot/v2/internal/core"
+	"github.com/ailinykh/reposter/v2/internal/core"
 )
 
 type YoutubeApi interface {

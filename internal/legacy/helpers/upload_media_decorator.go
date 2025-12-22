@@ -6,8 +6,8 @@ import (
 	"path"
 	"strings"
 
-	"github.com/ailinykh/pullanusbot/v2/internal/core"
-	legacy "github.com/ailinykh/pullanusbot/v2/internal/legacy/core"
+	"github.com/ailinykh/reposter/v2/internal/core"
+	legacy "github.com/ailinykh/reposter/v2/internal/legacy/core"
 )
 
 func CreateUploadMediaDecorator(l core.Logger, decoratee legacy.ISendMediaStrategy, fileDownloader legacy.IFileDownloader, videoFactory legacy.IVideoFactory, sendVideo legacy.ISendVideoStrategy) legacy.ISendMediaStrategy {

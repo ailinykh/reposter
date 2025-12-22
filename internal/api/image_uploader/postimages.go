@@ -13,8 +13,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/ailinykh/pullanusbot/v2/internal/core"
-	"github.com/ailinykh/pullanusbot/v2/internal/helpers"
+	"github.com/ailinykh/reposter/v2/internal/core"
+	"github.com/ailinykh/reposter/v2/internal/helpers"
 )
 
 func NewPostimages(l core.Logger) Uploader {

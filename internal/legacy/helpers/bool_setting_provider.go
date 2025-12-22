@@ -3,7 +3,7 @@ package helpers
 import (
 	"encoding/json"
 
-	"github.com/ailinykh/pullanusbot/v2/internal/legacy/core"
+	"github.com/ailinykh/reposter/v2/internal/legacy/core"
 )
 
 func CreateBoolSettingProvider(settingsProvider core.ISettingsProvider) core.IBoolSettingProvider {

@@ -3,8 +3,8 @@ package usecases
 import (
 	"fmt"
 
-	"github.com/ailinykh/pullanusbot/v2/internal/core"
-	legacy "github.com/ailinykh/pullanusbot/v2/internal/legacy/core"
+	"github.com/ailinykh/reposter/v2/internal/core"
+	legacy "github.com/ailinykh/reposter/v2/internal/legacy/core"
 )
 
 func CreateRemoveSourceDecorator(l core.Logger, decoratee legacy.ITextHandler, settingsKey legacy.SettingKey, settingProvider legacy.IBoolSettingProvider) *RemoveSourceDecorator {

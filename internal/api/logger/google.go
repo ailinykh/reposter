@@ -8,12 +8,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/ailinykh/pullanusbot/v2/internal/core"
+	"github.com/ailinykh/reposter/v2/internal/core"
 	"github.com/google/logger"
 )
 
 func NewGoogleLogger(ctx context.Context, workingDir string) core.Logger {
-	logFilePath := path.Join(workingDir, "pullanusbot.log")
+	logFilePath := path.Join(workingDir, "reposter.log")
 	lf, err := os.OpenFile(logFilePath, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0660)
 	if err != nil {
 		panic(err)
@@ -27,7 +27,7 @@ func NewGoogleLogger(ctx context.Context, workingDir string) core.Logger {
 	}()
 
 	return &GoogleLogger{
-		l: logger.Init("pullanusbot", true, false, lf),
+		l: logger.Init("reposter", true, false, lf),
 	}
 }
 

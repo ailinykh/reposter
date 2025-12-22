@@ -4,8 +4,8 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/ailinykh/pullanusbot/v2/internal/legacy/test_helpers"
-	"github.com/ailinykh/pullanusbot/v2/internal/legacy/usecases"
+	"github.com/ailinykh/reposter/v2/internal/legacy/test_helpers"
+	"github.com/ailinykh/reposter/v2/internal/legacy/usecases"
 	"github.com/stretchr/testify/assert"
 )
 

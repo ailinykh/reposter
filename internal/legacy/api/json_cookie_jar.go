@@ -6,7 +6,7 @@ import (
 	"net/url"
 	"os"
 
-	"github.com/ailinykh/pullanusbot/v2/internal/core"
+	"github.com/ailinykh/reposter/v2/internal/core"
 )
 
 func CreateJsonCookieJar(l core.Logger, cookieFile string) http.CookieJar {

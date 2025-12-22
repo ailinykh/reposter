@@ -5,8 +5,8 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/ailinykh/pullanusbot/v2/internal/core"
-	legacy "github.com/ailinykh/pullanusbot/v2/internal/legacy/core"
+	"github.com/ailinykh/reposter/v2/internal/core"
+	legacy "github.com/ailinykh/reposter/v2/internal/legacy/core"
 )
 
 func CreateStartFlow(l core.Logger, loc legacy.ILocalizer, settings legacy.ISettingsProvider, commandService legacy.ICommandService) *StartFlow {

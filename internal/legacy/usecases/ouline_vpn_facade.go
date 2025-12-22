@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"net/url"
 
-	"github.com/ailinykh/pullanusbot/v2/internal/core"
-	"github.com/ailinykh/pullanusbot/v2/internal/legacy/api"
-	legacy "github.com/ailinykh/pullanusbot/v2/internal/legacy/core"
-	"github.com/ailinykh/pullanusbot/v2/internal/legacy/infrastructure"
+	"github.com/ailinykh/reposter/v2/internal/core"
+	"github.com/ailinykh/reposter/v2/internal/legacy/api"
+	legacy "github.com/ailinykh/reposter/v2/internal/legacy/core"
+	"github.com/ailinykh/reposter/v2/internal/legacy/infrastructure"
 )
 
 func CreateOutlineVpnFacade(apiUrl string, dbFile string, l core.Logger, userStorage legacy.IUserStorage) legacy.IVpnAPI {

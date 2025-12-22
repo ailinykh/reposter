@@ -7,8 +7,8 @@ import (
 	"strings"
 	"unicode/utf8"
 
-	"github.com/ailinykh/pullanusbot/v2/internal/core"
-	"github.com/ailinykh/pullanusbot/v2/internal/legacy/infrastructure"
+	"github.com/ailinykh/reposter/v2/internal/core"
+	"github.com/ailinykh/reposter/v2/internal/legacy/infrastructure"
 )
 
 func NewLoggingRoundTripper(rt http.RoundTripper, ls *infrastructure.LogStorage, l core.Logger) http.RoundTripper {

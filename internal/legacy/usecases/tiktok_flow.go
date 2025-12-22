@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"regexp"
 
-	"github.com/ailinykh/pullanusbot/v2/internal/legacy/core"
+	"github.com/ailinykh/reposter/v2/internal/legacy/core"
 )
 
 func CreateTikTokFlow(httpClient core.IHttpClient, mediaFactory core.IMediaFactory, sendMediaStrategy core.ISendMediaStrategy) *TikTokFlow {

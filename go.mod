@@ -1,4 +1,4 @@
-module github.com/ailinykh/pullanusbot/v2
+module github.com/ailinykh/reposter/v2
 
 go 1.22
 

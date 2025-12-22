@@ -6,8 +6,8 @@ import (
 	"path"
 	"strings"
 
-	"github.com/ailinykh/pullanusbot/v2/internal/core"
-	legacy "github.com/ailinykh/pullanusbot/v2/internal/legacy/core"
+	"github.com/ailinykh/reposter/v2/internal/core"
+	legacy "github.com/ailinykh/reposter/v2/internal/legacy/core"
 )
 
 func CreateDownloadVideoFactory(l core.Logger, fileDownloader legacy.IFileDownloader, videoFactory legacy.IVideoFactory) legacy.IVideoFactory {
