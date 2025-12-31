@@ -27,7 +27,7 @@ run: build
 	@$(APP) & echo $$! > $(PID)
 
 test:
-	GO_ENV=testing go test ./... -v -coverprofile=coverage.txt -race -covermode=atomic
+	go test ./... -v -coverprofile=coverage.txt -race -covermode=atomic
 
 build: $(GO_FILES)
 	@go build -o $(APP) ./cmd/bot

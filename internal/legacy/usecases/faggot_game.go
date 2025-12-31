@@ -3,8 +3,6 @@ package usecases
 import (
 	"encoding/json"
 	"fmt"
-	"math/rand"
-	"os"
 	"regexp"
 	"sort"
 	"strconv"
@@ -131,7 +129,7 @@ func (flow *GameFlow) Play(message *legacy.Message, bot legacy.IBot) error {
 		}
 	}
 
-	winner := players[rand.Intn(len(players))]
+	winner := players[flow.r.GetRand(len(players))]
 
 	if !bot.IsUserMemberOfChat(winner, message.Chat.ID) {
 		_, err := bot.SendText(flow.t.I18n(message.Sender.LanguageCode, "faggot_winner_left"))
@@ -161,7 +159,7 @@ func (flow *GameFlow) Play(message *legacy.Message, bot legacy.IBot) error {
 				templates = append(templates, key)
 			}
 		}
-		template := templates[rand.Intn(len(templates))]
+		template := templates[flow.r.GetRand(len(templates))]
 		phrase := flow.t.I18n(message.Sender.LanguageCode, template)
 
 		if i == 3 {
@@ -178,10 +176,8 @@ func (flow *GameFlow) Play(message *legacy.Message, bot legacy.IBot) error {
 			flow.l.Error(err)
 		}
 
-		if os.Getenv("GO_ENV") != "testing" {
-			r := rand.Intn(3) + 1
-			time.Sleep(time.Duration(r) * time.Second)
-		}
+		r := flow.r.GetRand(3) + 1
+		time.Sleep(time.Duration(r) * time.Second)
 	}
 
 	return nil
@@ -247,10 +243,7 @@ func (flow *GameFlow) Stats(year string, message *legacy.Message, bot legacy.IBo
 		messages = append(messages, flow.t.I18n(message.Sender.LanguageCode, "faggot_stats_top_year", year))
 	}
 	messages = append(messages, "")
-	max := len(entries)
-	if max > 10 {
-		max = 10 // Top 10 only
-	}
+	max := min(len(entries), 10) // Show Top 10 players only
 	for i, e := range entries[:max] {
 		message := flow.t.I18n(message.Sender.LanguageCode, "faggot_stats_entry", i+1, e.Player.DisplayName(), e.Score)
 		messages = append(messages, message)

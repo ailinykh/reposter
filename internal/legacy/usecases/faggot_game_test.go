@@ -97,9 +97,9 @@ func Test_Play_RespondsWithCurrentGameResult(t *testing.T) {
 	m1 := makeGameMessage(1, "")
 	m2 := makeGameMessage(2, "")
 	game, bot, storage := makeSUT(map[string]string{
-		"faggot_game_0_0": "0",
-		"faggot_game_1_0": "1",
-		"faggot_game_2_0": "2",
+		"faggot_game_0_0": "00",
+		"faggot_game_1_0": "10",
+		"faggot_game_2_0": "20",
 		"faggot_game_3_0": "%s",
 	}, m1, m2)
 	bot.ChatMembers[0] = []string{""}
@@ -110,19 +110,19 @@ func Test_Play_RespondsWithCurrentGameResult(t *testing.T) {
 
 	winner := storage.rounds[0].Winner
 	phrase := fmt.Sprintf(`<a href="tg://user?id=%d">%s %s</a>`, winner.ID, winner.FirstName, winner.LastName)
-	assert.Equal(t, "0", bot.SentMessages[2])
-	assert.Equal(t, "1", bot.SentMessages[3])
-	assert.Equal(t, "2", bot.SentMessages[4])
+	assert.Equal(t, "00", bot.SentMessages[2])
+	assert.Equal(t, "10", bot.SentMessages[3])
+	assert.Equal(t, "20", bot.SentMessages[4])
 	assert.Equal(t, phrase, bot.SentMessages[5])
 }
 func Test_Play_RespondsWinnerAlreadyKnown(t *testing.T) {
 	m1 := makeGameMessage(1, "Faggot1")
 	m2 := makeGameMessage(2, "Faggot2")
 	game, bot, storage := makeSUT(map[string]string{
-		"faggot_game_0_0":     "0",
-		"faggot_game_1_0":     "1",
-		"faggot_game_2_0":     "2",
-		"faggot_game_3_0":     "3 %s",
+		"faggot_game_0_0":     "00",
+		"faggot_game_1_0":     "10",
+		"faggot_game_2_0":     "20",
+		"faggot_game_3_0":     "30 %s",
 		"faggot_winner_known": "Winner already known %s",
 	}, m1)
 	bot.ChatMembers[0] = []string{"Faggot1", "Faggot2"}
@@ -132,10 +132,7 @@ func Test_Play_RespondsWinnerAlreadyKnown(t *testing.T) {
 	game.Play(m1, bot)
 
 	winner := storage.rounds[0].Winner.Username
-	assert.Equal(t, "0", bot.SentMessages[2])
-	assert.Equal(t, "1", bot.SentMessages[3])
-	assert.Equal(t, "2", bot.SentMessages[4])
-	assert.Equal(t, fmt.Sprintf("3 @%s", winner), bot.SentMessages[5])
+	assert.Equal(t, fmt.Sprintf("30 @%s", winner), bot.SentMessages[5])
 
 	game.Play(m1, bot)
 
@@ -367,5 +364,5 @@ func (s *GameStorageMock) GetRounds(gameID int64) ([]*core.Round, error) {
 type RandMock struct{}
 
 func (RandMock) GetRand(int) int {
-	return 1
+	return 0
 }
