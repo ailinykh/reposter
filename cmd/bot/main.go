@@ -58,7 +58,7 @@ func main() {
 		logger.Info("extended logging enabled")
 		transport = http_logger.NewLoggingRoundTripper(
 			http.DefaultTransport,
-			infrastructure.NewLogStorage(dbFile, logger),
+			infrastructure.NewLogStorage(path.Join(workingDir, "reposter-logs.db"), logger),
 			logger,
 		)
 	}
