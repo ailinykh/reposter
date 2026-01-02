@@ -1,0 +1,56 @@
+package telegram
+
+import (
+	"encoding/json"
+	"fmt"
+	"log/slog"
+	"net/http"
+)
+
+func NewBot(opts ...func(*BotConfig)) (*Bot, error) {
+	config := NewBotConfig(opts...)
+
+	me, err := getMe(config)
+	if err != nil {
+		return nil, err
+	}
+	return &Bot{
+		User:     me,
+		client:   http.DefaultClient,
+		endpoint: config.endpoint,
+		token:    config.token,
+		l:        config.logger.With("username", me.Username),
+	}, nil
+}
+
+type Bot struct {
+	*User
+	client   *http.Client
+	endpoint string
+	token    string
+	l        *slog.Logger
+}
+
+func getMe(config *BotConfig) (*User, error) {
+	resp, err := config.client.Get(config.endpoint + "/bot" + config.token + "/getMe")
+	if err != nil {
+		return nil, fmt.Errorf("failed to connect Telegram API %w", err)
+	}
+	defer resp.Body.Close()
+
+	var r struct {
+		Ok          bool   `json:"ok"`
+		Description string `json:"description"`
+		Result      User   `json:"result"`
+	}
+	err = json.NewDecoder(resp.Body).Decode(&r)
+	if err != nil {
+		return nil, fmt.Errorf("failed to unmarshal json %w", err)
+	}
+
+	if !r.Ok {
+		return nil, fmt.Errorf("telegram error: %s", r.Description)
+	}
+
+	return &r.Result, nil
+}
