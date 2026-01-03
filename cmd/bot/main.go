@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"log/slog"
 	"os"
 	"os/signal"
 
@@ -18,6 +19,8 @@ func main() {
 	bot, err := telegram.NewBot(
 		telegram.WithToken(os.Getenv("TELEGRAM_BOT_TOKEN")),
 		telegram.WithLogger(logger),
+		telegram.WithClient(NewHttpClient(logger)),
+		telegram.WithContext(ctx),
 	)
 
 	if err != nil {
@@ -25,7 +28,27 @@ func main() {
 	}
 
 	logger.Info("bot created", "username", bot.Username)
-
-	<-ctx.Done()
+	startRunLoop(ctx, bot, logger)
 	logger.Info("attempt to shutdown gracefully...")
+}
+
+func startRunLoop(ctx context.Context, bot *telegram.Bot, logger *slog.Logger) {
+	var offset int64 = 0
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		default:
+			updates, err := bot.GetUpdates(offset, 300)
+			if err != nil {
+				logger.Error("failed to get updates", "error", err)
+				break
+			}
+
+			for _, update := range updates {
+				logger.Info("got update", "update", update)
+				offset = update.ID + 1
+			}
+		}
+	}
 }
