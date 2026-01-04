@@ -1,0 +1,20 @@
+CREATE TABLE IF NOT EXISTS game_players (
+  id UUID PRIMARY KEY DEFAULT uuidv7(),
+  chat_id BIGINT NOT NULL,
+  user_id BIGINT NOT NULL,
+  first_name TEXT NOT NULL,
+  last_name TEXT NOT NULL,
+  username TEXT NOT NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
+  removed_at TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS game_rounds (
+  id UUID PRIMARY KEY DEFAULT uuidv7(),
+  chat_id BIGINT NOT NULL,
+  user_id BIGINT NOT NULL,
+  username TEXT NOT NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMP NOT NULL DEFAULT NOW()
+)
