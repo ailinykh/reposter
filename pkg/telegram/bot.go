@@ -1,9 +1,11 @@
 package telegram
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"log/slog"
 	"net/http"
 )
@@ -58,37 +60,123 @@ func getMe(config *BotConfig) (*User, error) {
 	return &r.Result, nil
 }
 
+func chkErr(data []byte) error {
+	var e struct {
+		Ok          bool           `json:"ok"`
+		Code        int            `json:"error_code"`
+		Description string         `json:"description"`
+		Parameters  map[string]any `json:"parameters"`
+	}
+	if err := json.Unmarshal(data, &e); err != nil {
+		return fmt.Errorf("failed to parse error: %w", err)
+	}
+	if e.Ok {
+		return nil
+	}
+	return fmt.Errorf("telegram error: %s", e.Description)
+}
+
 func (b *Bot) GetUpdates(offset, timeout int64) ([]*Update, error) {
-	urlString := fmt.Sprintf("%s/bot%s/getUpdates?offset=%d&timeout=%d", b.endpoint, b.token, offset, timeout)
+	urlString := b.endpoint + "/bot" + b.token + "/getUpdates"
 	b.l.Debug("start polling...", "offset", offset, "timeout", timeout)
 
-	var r struct {
-		Ok          bool      `json:"ok"`
-		Description string    `json:"description"`
-		Result      []*Update `json:"result"`
-	}
-	err := b.do("GET", urlString, &r)
-	if err != nil {
-		return nil, err
+	o := map[string]any{
+		"offset":    offset,
+		"timeout":    timeout,
 	}
 
-	if !r.Ok {
-		return nil, fmt.Errorf("telegram error: %s", r.Description)
+	var r struct {
+		Result []*Update `json:"result"`
+	}
+	err := b.do(&r, "POST", urlString, o)
+	if err != nil {
+		return nil, err
 	}
 
 	return r.Result, nil
 }
 
-func (b *Bot) do(method, url string, result any) error {
-	request, err := http.NewRequestWithContext(b.ctx, method, url, nil)
+func (b *Bot) SendMessage(chatID int64, text string) (*Message, error) {
+	urlString := b.endpoint + "/bot" + b.token + "/sendMessage"
+	o := map[string]any{
+		"chat_id":    chatID,
+		"text":       text,
+		"parse_mode": "HTML",
+	}
+	
+	var r struct {
+		Result *Message `json:"result"`
+	}
+
+	err := b.do(&r, "POST", urlString, o)
+	if err != nil {
+		return nil, err
+	}
+
+	return r.Result, nil
+}
+
+func (b *Bot) IsUserMemberOfChat(userID, chatID int64) bool {
+	chatMember, err := b.GetChatMember(userID, chatID)
+	if err != nil {
+		b.l.Error("failed to get ChatMember", "error", err)
+		return false
+	}
+
+	return chatMember != nil && chatMember.Status != "left" && chatMember.Status != "kicked"
+}
+
+func (b *Bot) GetChatMember(userID, chatID int64) (*ChatMember, error) {
+	urlString := b.endpoint + "/bot" + b.token + "/getChatMember"
+	o := map[string]any{
+		"user_id":    userID,
+		"chat_id":    chatID,
+	}
+
+	var r struct {
+		Result *ChatMember `json:"result"`
+	}
+	err := b.do(&r, "POST", urlString, o)
+	if err != nil {
+		return nil, fmt.Errorf("failed to perform request: %w", err)
+	}
+	return r.Result, nil
+}
+
+func (b *Bot) do(res any, method, url string, req any) error {
+	var body io.Reader
+	if req != nil {
+		buf := new(bytes.Buffer)
+		err := json.NewEncoder(buf).Encode(&req)
+		if err != nil {
+			return fmt.Errorf("failed to pack data %w", err)
+		}
+		body = io.NopCloser(buf)
+	}
+
+	request, err := http.NewRequestWithContext(b.ctx, method, url, body)
 	if err != nil {
 		return fmt.Errorf("failed to create request: %w", err)
 	}
+
+	if method == "POST" {
+		request.Header.Add("Content-Type", "application/json")
+	}
+
 	resp, err := b.client.Do(request)
 	if err != nil {
 		return fmt.Errorf("failed to perform request: %w", err)
 	}
 	defer resp.Body.Close()
 
-	return json.NewDecoder(resp.Body).Decode(result)
+	data, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return fmt.Errorf("failed to read body: %w", err)
+	}
+
+	if err = chkErr(data); err != nil {
+		return err
+	}
+
+	return json.Unmarshal(data, res)
 }
