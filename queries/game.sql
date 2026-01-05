@@ -19,9 +19,16 @@ RETURNING *;
 
 
 -- name: GetRounds :many
-SELECT * FROM game_rounds WHERE
-  chat_id = $1
-;
+SELECT
+	game_rounds.*,
+	game_players.username AS actual_username
+FROM
+	game_rounds
+	LEFT JOIN game_players ON game_rounds.user_id = game_players.user_id
+	AND game_rounds.chat_id = game_players.chat_id
+WHERE
+	game_rounds.chat_id = $1;
+
 
 -- name: CreateRound :one
 INSERT INTO game_rounds (

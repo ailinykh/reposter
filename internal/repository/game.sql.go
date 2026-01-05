@@ -7,6 +7,10 @@ package repository
 
 import (
 	"context"
+	"database/sql"
+	"time"
+
+	"github.com/google/uuid"
 )
 
 const createPlayer = `-- name: CreatePlayer :one
@@ -115,19 +119,36 @@ func (q *Queries) GetPlayers(ctx context.Context, chatID int64) ([]GamePlayer, e
 }
 
 const getRounds = `-- name: GetRounds :many
-SELECT id, chat_id, user_id, username, created_at, updated_at FROM game_rounds WHERE
-  chat_id = $1
+SELECT
+	game_rounds.id, game_rounds.chat_id, game_rounds.user_id, game_rounds.username, game_rounds.created_at, game_rounds.updated_at,
+	game_players.username AS actual_username
+FROM
+	game_rounds
+	LEFT JOIN game_players ON game_rounds.user_id = game_players.user_id
+	AND game_rounds.chat_id = game_players.chat_id
+WHERE
+	game_rounds.chat_id = $1
 `
 
-func (q *Queries) GetRounds(ctx context.Context, chatID int64) ([]GameRound, error) {
+type GetRoundsRow struct {
+	ID             uuid.UUID
+	ChatID         int64
+	UserID         int64
+	Username       string
+	CreatedAt      time.Time
+	UpdatedAt      time.Time
+	ActualUsername sql.NullString
+}
+
+func (q *Queries) GetRounds(ctx context.Context, chatID int64) ([]GetRoundsRow, error) {
 	rows, err := q.db.QueryContext(ctx, getRounds, chatID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []GameRound
+	var items []GetRoundsRow
 	for rows.Next() {
-		var i GameRound
+		var i GetRoundsRow
 		if err := rows.Scan(
 			&i.ID,
 			&i.ChatID,
@@ -135,6 +156,7 @@ func (q *Queries) GetRounds(ctx context.Context, chatID int64) ([]GameRound, err
 			&i.Username,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.ActualUsername,
 		); err != nil {
 			return nil, err
 		}
