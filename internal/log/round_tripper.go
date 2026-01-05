@@ -21,7 +21,16 @@ type LoggingRoundTripper struct {
 }
 
 func (l *LoggingRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
-	// TODO: log outgoing request
+	l.l.Debug("request", "url", req.URL.Path)
+	if req.Body != nil {
+		body, err := io.ReadAll(req.Body)
+		req.Body.Close()
+		if err == nil {
+			req.Body = io.NopCloser(bytes.NewBuffer(body))
+			l.l.Debug("sending", "body", body)
+		}
+	}
+
 	resp, err := l.rt.RoundTrip(req)
 	if err != nil {
 		l.l.Error("Request failed", "error", err, "method", req.Method, "url", req.URL)
@@ -39,8 +48,7 @@ func (l *LoggingRoundTripper) RoundTrip(req *http.Request) (*http.Response, erro
 		return resp, nil
 	}
 
-	rawJson := string(data)
-	l.l.Debug("success", "json", rawJson)
+	l.l.Debug("success", "json", string(data))
 
 	return resp, nil
 }
