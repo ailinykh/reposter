@@ -14,6 +14,10 @@ type Chat struct {
 	Username  string `json:"username,omitempty"`
 }
 
+func (c *Chat) Private() bool {
+	return c.Type == "private"
+}
+
 type User struct {
 	ID           int64  `json:"id"`
 	FirstName    string `json:"first_name"`
@@ -22,6 +26,18 @@ type User struct {
 	IsBot        bool   `json:"is_bot"`
 	IsPremium    bool   `json:"is_premium,omitempty"`
 	LanguageCode string `json:"language_code"`
+}
+
+func (u *User) DisplayName() string {
+	if len(u.Username) > 0 {
+		return u.Username
+	}
+
+	if len(u.LastName) == 0 {
+		return u.FirstName
+	}
+
+	return u.FirstName + " " + u.LastName
 }
 
 type Message struct {
@@ -35,6 +51,16 @@ type Message struct {
 		Length int    `json:"length"`
 		Type   string `json:"type"`
 	}
+}
+
+func (m *Message) Commands() []string {
+	var commands = []string{}
+	for _, e := range m.Entities {
+		if e.Type == "bot_command" {
+			commands = append(commands, m.Text[e.Offset:e.Offset+e.Length])
+		}
+	}
+	return commands
 }
 
 type ChatMember struct {
