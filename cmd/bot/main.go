@@ -6,7 +6,9 @@ import (
 	"os"
 	"os/signal"
 
+	"github.com/ailinykh/reposter/v3/internal/fotd"
 	"github.com/ailinykh/reposter/v3/internal/log"
+	"github.com/ailinykh/reposter/v3/internal/repository"
 	"github.com/ailinykh/reposter/v3/pkg/telegram"
 )
 
@@ -16,8 +18,11 @@ func main() {
 
 	logger := log.NewLogger()
 	bot := NewBot(ctx, logger)
+	repo := repository.New(NewDB(logger))
 
-	startRunLoop(ctx, logger, bot, []UpdateHandler{})
+	startRunLoop(ctx, logger, bot, []UpdateHandler{
+		fotd.NewGame(ctx, logger, repo),
+	})
 	logger.Info("attempt to shutdown gracefully...")
 }
 
