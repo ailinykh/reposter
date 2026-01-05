@@ -15,24 +15,18 @@ func main() {
 	defer cancel()
 
 	logger := log.NewLogger()
+	bot := NewBot(ctx, logger)
 
-	bot, err := telegram.NewBot(
-		telegram.WithToken(os.Getenv("TELEGRAM_BOT_TOKEN")),
-		telegram.WithLogger(logger),
-		telegram.WithClient(NewHttpClient(logger)),
-		telegram.WithContext(ctx),
-	)
-
-	if err != nil {
-		panic(err)
-	}
-
-	logger.Info("bot created", "username", bot.Username)
-	startRunLoop(ctx, bot, logger)
+	startRunLoop(ctx, logger, bot, []UpdateHandler{})
 	logger.Info("attempt to shutdown gracefully...")
 }
 
-func startRunLoop(ctx context.Context, bot *telegram.Bot, logger *slog.Logger) {
+func startRunLoop(
+	ctx context.Context,
+	logger *slog.Logger,
+	bot *telegram.Bot,
+	handlers []UpdateHandler,
+) {
 	var offset int64 = 0
 	for {
 		select {
@@ -46,6 +40,11 @@ func startRunLoop(ctx context.Context, bot *telegram.Bot, logger *slog.Logger) {
 			}
 
 			for _, update := range updates {
+				for _, handler := range handlers {
+					if err := handler.Handle(update, bot); err != nil {
+						logger.Error("failed to process update", "handler", handler, "error", err)
+					}
+				}
 				logger.Info("got update", "update", update)
 				offset = update.ID + 1
 			}
