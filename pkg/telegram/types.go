@@ -36,3 +36,8 @@ type Message struct {
 		Type   string `json:"type"`
 	}
 }
+
+type ChatMember struct {
+	Status string `json:"status"`
+	User   *User  `json:"user"`
+}
