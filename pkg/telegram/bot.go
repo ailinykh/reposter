@@ -78,11 +78,11 @@ func chkErr(data []byte) error {
 
 func (b *Bot) GetUpdates(offset, timeout int64) ([]*Update, error) {
 	urlString := b.endpoint + "/bot" + b.token + "/getUpdates"
-	b.l.Debug("start polling...", "offset", offset, "timeout", timeout)
+	b.l.Debug("🗳️ start polling...", "offset", offset, "timeout", timeout)
 
 	o := map[string]any{
-		"offset":    offset,
-		"timeout":    timeout,
+		"offset":  offset,
+		"timeout": timeout,
 	}
 
 	var r struct {
@@ -102,8 +102,11 @@ func (b *Bot) SendMessage(chatID int64, text string) (*Message, error) {
 		"chat_id":    chatID,
 		"text":       text,
 		"parse_mode": "HTML",
+		"link_preview_options": map[string]any{
+			"is_disabled": true,
+		},
 	}
-	
+
 	var r struct {
 		Result *Message `json:"result"`
 	}
@@ -129,8 +132,8 @@ func (b *Bot) IsUserMemberOfChat(userID, chatID int64) bool {
 func (b *Bot) GetChatMember(userID, chatID int64) (*ChatMember, error) {
 	urlString := b.endpoint + "/bot" + b.token + "/getChatMember"
 	o := map[string]any{
-		"user_id":    userID,
-		"chat_id":    chatID,
+		"user_id": userID,
+		"chat_id": chatID,
 	}
 
 	var r struct {
