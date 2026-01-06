@@ -7,7 +7,8 @@ CREATE TABLE IF NOT EXISTS game_players (
   username TEXT NOT NULL,
   created_at TIMESTAMP NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
-  removed_at TIMESTAMP
+  removed_at TIMESTAMP,
+  UNIQUE(chat_id, user_id)
 );
 
 CREATE TABLE IF NOT EXISTS game_rounds (
@@ -16,5 +17,6 @@ CREATE TABLE IF NOT EXISTS game_rounds (
   user_id BIGINT NOT NULL,
   username TEXT NOT NULL,
   created_at TIMESTAMP NOT NULL DEFAULT NOW(),
-  updated_at TIMESTAMP NOT NULL DEFAULT NOW()
+  updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
+  UNIQUE(chat_id, user_id)
 )
