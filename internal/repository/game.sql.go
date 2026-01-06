@@ -173,7 +173,7 @@ func (q *Queries) GetRounds(ctx context.Context, chatID int64) ([]GetRoundsRow, 
 
 const updatePlayer = `-- name: UpdatePlayer :many
 UPDATE game_players SET
-  first_name=$2, last_name=$3, username=$4
+  first_name=$2, last_name=$3, username=$4, updated_at=NOW()
 WHERE
   user_id = $1
 RETURNING id, chat_id, user_id, first_name, last_name, username, created_at, updated_at, removed_at

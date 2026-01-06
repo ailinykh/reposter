@@ -12,7 +12,7 @@ INSERT INTO game_players (
 
 -- name: UpdatePlayer :many
 UPDATE game_players SET
-  first_name=$2, last_name=$3, username=$4
+  first_name=$2, last_name=$3, username=$4, updated_at=NOW()
 WHERE
   user_id = $1
 RETURNING *;
