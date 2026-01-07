@@ -40,7 +40,7 @@ type Bot struct {
 func getMe(config *BotConfig) (*User, error) {
 	resp, err := config.client.Get(config.endpoint + "/bot" + config.token + "/getMe")
 	if err != nil {
-		return nil, fmt.Errorf("failed to connect Telegram API %w", err)
+		return nil, fmt.Errorf("failed to get bot data: %w", err)
 	}
 	defer resp.Body.Close()
 
@@ -49,9 +49,9 @@ func getMe(config *BotConfig) (*User, error) {
 		Description string `json:"description"`
 		Result      User   `json:"result"`
 	}
-	err = json.NewDecoder(resp.Body).Decode(&r)
-	if err != nil {
-		return nil, fmt.Errorf("failed to unmarshal json %w", err)
+
+	if err = json.NewDecoder(resp.Body).Decode(&r); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal json: %w", err)
 	}
 
 	if !r.Ok {
@@ -78,7 +78,7 @@ func chkErr(data []byte) error {
 }
 
 func (b *Bot) GetUpdates(offset, timeout int64) ([]*Update, error) {
-	urlString := b.endpoint + "/bot" + b.token + "/getUpdates"
+	url := b.endpoint + "/bot" + b.token + "/getUpdates"
 	b.l.Debug("🗳️ start polling...", "offset", offset, "timeout", timeout)
 
 	o := map[string]any{
@@ -86,19 +86,19 @@ func (b *Bot) GetUpdates(offset, timeout int64) ([]*Update, error) {
 		"timeout": timeout,
 	}
 
-	var r struct {
+	var i struct {
 		Result []*Update `json:"result"`
 	}
-	err := b.do(&r, "POST", urlString, o)
+	err := b.do("POST", url, o, &i)
 	if err != nil {
 		return nil, err
 	}
 
-	return r.Result, nil
+	return i.Result, nil
 }
 
 func (b *Bot) SendMessage(chatID int64, text string, opts ...any) (*Message, error) {
-	urlString := b.endpoint + "/bot" + b.token + "/sendMessage"
+	url := b.endpoint + "/bot" + b.token + "/sendMessage"
 	req := map[string]any{
 		"chat_id":    chatID,
 		"text":       text,
@@ -120,7 +120,7 @@ func (b *Bot) SendMessage(chatID int64, text string, opts ...any) (*Message, err
 		Result *Message `json:"result"`
 	}
 
-	err := b.do(&res, "POST", urlString, req)
+	err := b.do("POST", url, req, &res)
 	if err != nil {
 		return nil, err
 	}
@@ -139,27 +139,27 @@ func (b *Bot) IsUserMemberOfChat(userID, chatID int64) bool {
 }
 
 func (b *Bot) GetChatMember(userID, chatID int64) (*ChatMember, error) {
-	urlString := b.endpoint + "/bot" + b.token + "/getChatMember"
+	url := b.endpoint + "/bot" + b.token + "/getChatMember"
 	o := map[string]any{
 		"user_id": userID,
 		"chat_id": chatID,
 	}
 
-	var r struct {
+	var i struct {
 		Result *ChatMember `json:"result"`
 	}
-	err := b.do(&r, "POST", urlString, o)
+	err := b.do("POST", url, o, &i)
 	if err != nil {
 		return nil, fmt.Errorf("failed to perform request: %w", err)
 	}
-	return r.Result, nil
+	return i.Result, nil
 }
 
-func (b *Bot) do(res any, method, url string, req any) error {
+func (b *Bot) do(method, url string, o, i any) error {
 	var body io.Reader
-	if req != nil {
+	if o != nil {
 		buf := new(bytes.Buffer)
-		err := json.NewEncoder(buf).Encode(&req)
+		err := json.NewEncoder(buf).Encode(&o)
 		if err != nil {
 			return fmt.Errorf("failed to pack data %w", err)
 		}
@@ -190,5 +190,5 @@ func (b *Bot) do(res any, method, url string, req any) error {
 		return err
 	}
 
-	return json.Unmarshal(data, res)
+	return json.Unmarshal(data, i)
 }
