@@ -128,6 +128,38 @@ func (b *Bot) SendMessage(chatID int64, text string, opts ...any) (*Message, err
 	return res.Result, nil
 }
 
+func (b *Bot) EditMessageText(chatID, messageID int64, text string, opts ...any) (*Message, error) {
+	url := b.endpoint + "/bot" + b.token + "/editMessageText"
+	req := map[string]any{
+		"chat_id":    chatID,
+		"message_id": messageID,
+		"text":       text,
+		"parse_mode": "HTML",
+		"link_preview_options": map[string]any{
+			"is_disabled": true,
+		},
+	}
+	for _, opt := range opts {
+		switch o := opt.(type) {
+		case map[string]any:
+			maps.Copy(req, o)
+		default:
+			break
+		}
+	}
+
+	var res struct {
+		Result *Message `json:"result"`
+	}
+
+	err := b.do("POST", url, req, &res)
+	if err != nil {
+		return nil, err
+	}
+
+	return res.Result, nil
+}
+
 func (b *Bot) IsUserMemberOfChat(userID, chatID int64) bool {
 	chatMember, err := b.GetChatMember(userID, chatID)
 	if err != nil {
