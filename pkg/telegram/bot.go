@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
+	"maps"
 	"net/http"
 )
 
@@ -96,9 +97,9 @@ func (b *Bot) GetUpdates(offset, timeout int64) ([]*Update, error) {
 	return r.Result, nil
 }
 
-func (b *Bot) SendMessage(chatID int64, text string) (*Message, error) {
+func (b *Bot) SendMessage(chatID int64, text string, opts ...any) (*Message, error) {
 	urlString := b.endpoint + "/bot" + b.token + "/sendMessage"
-	o := map[string]any{
+	req := map[string]any{
 		"chat_id":    chatID,
 		"text":       text,
 		"parse_mode": "HTML",
@@ -106,17 +107,25 @@ func (b *Bot) SendMessage(chatID int64, text string) (*Message, error) {
 			"is_disabled": true,
 		},
 	}
+	for _, opt := range opts {
+		switch o := opt.(type) {
+		case map[string]any:
+			maps.Copy(req, o)
+		default:
+			break
+		}
+	}
 
-	var r struct {
+	var res struct {
 		Result *Message `json:"result"`
 	}
 
-	err := b.do(&r, "POST", urlString, o)
+	err := b.do(&res, "POST", urlString, req)
 	if err != nil {
 		return nil, err
 	}
 
-	return r.Result, nil
+	return res.Result, nil
 }
 
 func (b *Bot) IsUserMemberOfChat(userID, chatID int64) bool {
