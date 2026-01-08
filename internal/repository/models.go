@@ -6,10 +6,20 @@ package repository
 
 import (
 	"database/sql"
+	"encoding/json"
 	"time"
 
 	"github.com/google/uuid"
 )
+
+type ChatSetting struct {
+	ID        uuid.UUID
+	ChatID    int64
+	Key       string
+	Value     json.RawMessage
+	CreatedAt time.Time
+	UpdatedAt time.Time
+}
 
 type GamePlayer struct {
 	ID        uuid.UUID

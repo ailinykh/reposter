@@ -1,0 +1,9 @@
+CREATE TABLE IF NOT EXISTS chat_settings (
+  id UUID PRIMARY KEY DEFAULT uuidv7(),
+  chat_id BIGINT NOT NULL,
+  key TEXT NOT NULL,
+  value JSONB NOT NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
+  UNIQUE(chat_id, key)
+);
