@@ -1,8 +1,9 @@
 package telegram
 
 type Update struct {
-	ID      int64    `json:"update_id"`
-	Message *Message `json:"message,omitempty"`
+	ID            int64          `json:"update_id"`
+	Message       *Message       `json:"message"`
+	CallbackQuery *CallbackQuery `json:"callback_query"`
 }
 
 type Chat struct {
@@ -66,4 +67,13 @@ func (m *Message) Commands() []string {
 type ChatMember struct {
 	Status string `json:"status"`
 	User   *User  `json:"user"`
+}
+
+type CallbackQuery struct {
+	ID           string `json:"id"`
+	ChatInstance string `json:"chat_instance"`
+	Data         string `json:"data"`
+	From         *User  `json:"from"`
+	// NOTE: to ensure message is accessible, check it's date > 0
+	MaybeInaccessibleMessage *Message `json:"message"`
 }

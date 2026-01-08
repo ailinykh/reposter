@@ -185,6 +185,15 @@ func (b *Bot) GetChatMember(userID, chatID int64) (*ChatMember, error) {
 	return i.Result, nil
 }
 
+func (b *Bot) AnswerCallbackQuery(queryID, text string) error {
+	url := b.endpoint + "/bot" + b.token + "/answerCallbackQuery"
+	o := map[string]any{
+		"callback_query_id": queryID,
+		"text":              text,
+	}
+	return b.do("POST", url, o, nil)
+}
+
 func (b *Bot) do(method, url string, o, i any) error {
 	var body io.Reader
 	if o != nil {
