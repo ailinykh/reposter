@@ -89,8 +89,8 @@ func (b *Bot) GetUpdates(offset, timeout int64) ([]*Update, error) {
 	var i struct {
 		Result []*Update `json:"result"`
 	}
-	err := b.do("POST", url, o, &i)
-	if err != nil {
+
+	if err := b.do("POST", url, o, &i); err != nil {
 		return nil, err
 	}
 
@@ -120,8 +120,7 @@ func (b *Bot) SendMessage(chatID int64, text string, opts ...any) (*Message, err
 		Result *Message `json:"result"`
 	}
 
-	err := b.do("POST", url, req, &res)
-	if err != nil {
+	if err := b.do("POST", url, req, &res); err != nil {
 		return nil, err
 	}
 
@@ -152,8 +151,7 @@ func (b *Bot) EditMessageText(chatID, messageID int64, text string, opts ...any)
 		Result *Message `json:"result"`
 	}
 
-	err := b.do("POST", url, req, &res)
-	if err != nil {
+	if err := b.do("POST", url, req, &res); err != nil {
 		return nil, err
 	}
 
@@ -180,9 +178,9 @@ func (b *Bot) GetChatMember(userID, chatID int64) (*ChatMember, error) {
 	var i struct {
 		Result *ChatMember `json:"result"`
 	}
-	err := b.do("POST", url, o, &i)
-	if err != nil {
-		return nil, fmt.Errorf("failed to perform request: %w", err)
+
+	if err := b.do("POST", url, o, &i); err != nil {
+		return nil, err
 	}
 	return i.Result, nil
 }
