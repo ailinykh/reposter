@@ -158,6 +158,21 @@ func (b *Bot) EditMessageText(chatID, messageID int64, text string, opts ...any)
 	return res.Result, nil
 }
 
+func (b *Bot) DeleteMessage(chatID, messageID int64) (bool, error) {
+	url := b.endpoint + "/bot" + b.token + "/deleteMessage"
+	o := map[string]any{
+		"chat_id":    chatID,
+		"message_id": messageID,
+	}
+	var i struct {
+		Result bool `json:"result"`
+	}
+	if err := b.do("POST", url, o, &i); err != nil {
+		return false, err
+	}
+	return i.Result, nil
+}
+
 func (b *Bot) IsUserMemberOfChat(userID, chatID int64) bool {
 	chatMember, err := b.GetChatMember(userID, chatID)
 	if err != nil {
