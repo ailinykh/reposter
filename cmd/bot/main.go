@@ -6,7 +6,6 @@ import (
 	"os"
 	"os/signal"
 
-	"github.com/ailinykh/reposter/v3/internal/fotd"
 	"github.com/ailinykh/reposter/v3/internal/log"
 	"github.com/ailinykh/reposter/v3/internal/repository"
 	"github.com/ailinykh/reposter/v3/pkg/telegram"
@@ -20,9 +19,7 @@ func main() {
 	bot := NewBot(ctx, logger)
 	repo := repository.New(NewDB(logger))
 
-	startRunLoop(ctx, logger, bot, []UpdateHandler{
-		fotd.NewGame(ctx, logger, repo),
-	})
+	startRunLoop(ctx, logger, bot, makeHandlers(ctx, logger, repo))
 	logger.Info("attempt to shutdown gracefully...")
 }
 
@@ -47,7 +44,7 @@ func startRunLoop(
 			for _, update := range updates {
 				for _, handler := range handlers {
 					if err := handler.Handle(update, bot); err != nil {
-						logger.Error("failed to process update", "handler", handler, "error", err)
+						logger.Error("❌ failed to process update", "handler", handler, "error", err)
 					}
 				}
 				logger.Info("got update", "update", update)
