@@ -6,6 +6,7 @@ import (
 	"os"
 
 	"github.com/ailinykh/reposter/v3/internal/fotd"
+	"github.com/ailinykh/reposter/v3/internal/info"
 	"github.com/ailinykh/reposter/v3/internal/repository"
 	"github.com/ailinykh/reposter/v3/internal/xui"
 	"github.com/ailinykh/reposter/v3/pkg/telegram"
@@ -22,6 +23,7 @@ func makeHandlers(
 ) []UpdateHandler {
 	handlers := []UpdateHandler{
 		fotd.NewGame(ctx, logger, repo),
+		info.New(),
 	}
 
 	baseUrl := os.Getenv("XUI_BASE_URL")
