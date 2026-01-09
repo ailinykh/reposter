@@ -42,12 +42,16 @@ func (u *User) DisplayName() string {
 }
 
 type Message struct {
-	Chat     *Chat  `json:"chat"`
-	Date     int    `json:"date"`
-	From     *User  `json:"from,omitempty"`
-	ID       int64  `json:"message_id"`
-	Text     string `json:"text,omitempty"`
-	Entities []struct {
+	ID                int64    `json:"message_id"`
+	Date              int      `json:"date"`
+	Chat              *Chat    `json:"chat"`
+	From              *User    `json:"from"`
+	ForwardFrom       *User    `json:"forward_from"`
+	ForwardFromChat   *Chat    `json:"forward_from_chat"`
+	ForwardSenderName string   `json:"forward_sender_name"`
+	ReplyTo           *Message `json:"reply_to_message"`
+	Text              string   `json:"text"`
+	Entities          []struct {
 		Offset int    `json:"offset"`
 		Length int    `json:"length"`
 		Type   string `json:"type"`
