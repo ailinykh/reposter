@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
-	"maps"
 	"net/http"
 )
 
@@ -94,89 +93,6 @@ func (b *Bot) GetUpdates(offset, timeout int64) ([]*Update, error) {
 	}
 
 	return i.Result, nil
-}
-
-func (b *Bot) SendMessage(chatID int64, text string, opts ...any) (*Message, error) {
-	req := map[string]any{
-		"chat_id":    chatID,
-		"text":       text,
-		"parse_mode": "HTML",
-		"link_preview_options": map[string]any{
-			"is_disabled": true,
-		},
-	}
-	for _, opt := range opts {
-		switch o := opt.(type) {
-		case map[string]any:
-			maps.Copy(req, o)
-		default:
-			break
-		}
-	}
-
-	var res struct {
-		Result *Message `json:"result"`
-	}
-
-	if err := b.do("sendMessage", req, &res); err != nil {
-		return nil, err
-	}
-
-	return res.Result, nil
-}
-
-func (b *Bot) EditMessageText(chatID, messageID int64, text string, opts ...any) (*Message, error) {
-	req := map[string]any{
-		"chat_id":    chatID,
-		"message_id": messageID,
-		"text":       text,
-		"parse_mode": "HTML",
-		"link_preview_options": map[string]any{
-			"is_disabled": true,
-		},
-	}
-	for _, opt := range opts {
-		switch o := opt.(type) {
-		case map[string]any:
-			maps.Copy(req, o)
-		default:
-			break
-		}
-	}
-
-	var res struct {
-		Result *Message `json:"result"`
-	}
-
-	if err := b.do("editMessageText", req, &res); err != nil {
-		return nil, err
-	}
-
-	return res.Result, nil
-}
-
-func (b *Bot) DeleteMessage(chatID, messageID int64) (bool, error) {
-	o := map[string]any{
-		"chat_id":    chatID,
-		"message_id": messageID,
-	}
-	var i struct {
-		Result bool `json:"result"`
-	}
-	if err := b.do("deleteMessage", o, &i); err != nil {
-		return false, err
-	}
-	return i.Result, nil
-}
-
-func (b *Bot) IsUserMemberOfChat(userID, chatID int64) bool {
-	chatMember, err := b.GetChatMember(userID, chatID)
-	if err != nil {
-		b.l.Error("failed to get ChatMember", "error", err)
-		return false
-	}
-
-	return chatMember != nil && chatMember.Status != "left" && chatMember.Status != "kicked"
 }
 
 func (b *Bot) GetChatMember(userID, chatID int64) (*ChatMember, error) {
