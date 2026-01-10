@@ -78,7 +78,6 @@ func chkErr(data []byte) error {
 }
 
 func (b *Bot) GetUpdates(offset, timeout int64) ([]*Update, error) {
-	url := b.endpoint + "/bot" + b.token + "/getUpdates"
 	b.l.Debug("🗳️ start polling...", "offset", offset, "timeout", timeout)
 
 	o := map[string]any{
@@ -90,7 +89,7 @@ func (b *Bot) GetUpdates(offset, timeout int64) ([]*Update, error) {
 		Result []*Update `json:"result"`
 	}
 
-	if err := b.do("POST", url, o, &i); err != nil {
+	if err := b.do("getUpdates", o, &i); err != nil {
 		return nil, err
 	}
 
@@ -98,7 +97,6 @@ func (b *Bot) GetUpdates(offset, timeout int64) ([]*Update, error) {
 }
 
 func (b *Bot) SendMessage(chatID int64, text string, opts ...any) (*Message, error) {
-	url := b.endpoint + "/bot" + b.token + "/sendMessage"
 	req := map[string]any{
 		"chat_id":    chatID,
 		"text":       text,
@@ -120,7 +118,7 @@ func (b *Bot) SendMessage(chatID int64, text string, opts ...any) (*Message, err
 		Result *Message `json:"result"`
 	}
 
-	if err := b.do("POST", url, req, &res); err != nil {
+	if err := b.do("sendMessage", req, &res); err != nil {
 		return nil, err
 	}
 
@@ -128,7 +126,6 @@ func (b *Bot) SendMessage(chatID int64, text string, opts ...any) (*Message, err
 }
 
 func (b *Bot) EditMessageText(chatID, messageID int64, text string, opts ...any) (*Message, error) {
-	url := b.endpoint + "/bot" + b.token + "/editMessageText"
 	req := map[string]any{
 		"chat_id":    chatID,
 		"message_id": messageID,
@@ -151,7 +148,7 @@ func (b *Bot) EditMessageText(chatID, messageID int64, text string, opts ...any)
 		Result *Message `json:"result"`
 	}
 
-	if err := b.do("POST", url, req, &res); err != nil {
+	if err := b.do("editMessageText", req, &res); err != nil {
 		return nil, err
 	}
 
@@ -159,7 +156,6 @@ func (b *Bot) EditMessageText(chatID, messageID int64, text string, opts ...any)
 }
 
 func (b *Bot) DeleteMessage(chatID, messageID int64) (bool, error) {
-	url := b.endpoint + "/bot" + b.token + "/deleteMessage"
 	o := map[string]any{
 		"chat_id":    chatID,
 		"message_id": messageID,
@@ -167,7 +163,7 @@ func (b *Bot) DeleteMessage(chatID, messageID int64) (bool, error) {
 	var i struct {
 		Result bool `json:"result"`
 	}
-	if err := b.do("POST", url, o, &i); err != nil {
+	if err := b.do("deleteMessage", o, &i); err != nil {
 		return false, err
 	}
 	return i.Result, nil
@@ -184,7 +180,6 @@ func (b *Bot) IsUserMemberOfChat(userID, chatID int64) bool {
 }
 
 func (b *Bot) GetChatMember(userID, chatID int64) (*ChatMember, error) {
-	url := b.endpoint + "/bot" + b.token + "/getChatMember"
 	o := map[string]any{
 		"user_id": userID,
 		"chat_id": chatID,
@@ -194,22 +189,22 @@ func (b *Bot) GetChatMember(userID, chatID int64) (*ChatMember, error) {
 		Result *ChatMember `json:"result"`
 	}
 
-	if err := b.do("POST", url, o, &i); err != nil {
+	if err := b.do("getChatMember", o, &i); err != nil {
 		return nil, err
 	}
 	return i.Result, nil
 }
 
 func (b *Bot) AnswerCallbackQuery(queryID, text string) error {
-	url := b.endpoint + "/bot" + b.token + "/answerCallbackQuery"
 	o := map[string]any{
 		"callback_query_id": queryID,
 		"text":              text,
 	}
-	return b.do("POST", url, o, nil)
+	return b.do("answerCallbackQuery", o, nil)
 }
 
-func (b *Bot) do(method, url string, o, i any) error {
+func (b *Bot) do(method string, o, i any) error {
+	url := b.endpoint + "/bot" + b.token + "/" + method
 	var body io.Reader
 	if o != nil {
 		buf := new(bytes.Buffer)
@@ -220,14 +215,12 @@ func (b *Bot) do(method, url string, o, i any) error {
 		body = io.NopCloser(buf)
 	}
 
-	request, err := http.NewRequestWithContext(b.ctx, method, url, body)
+	request, err := http.NewRequestWithContext(b.ctx, http.MethodPost, url, body)
 	if err != nil {
 		return fmt.Errorf("failed to create request: %w", err)
 	}
 
-	if method == "POST" {
-		request.Header.Add("Content-Type", "application/json")
-	}
+	request.Header.Add("Content-Type", "application/json")
 
 	resp, err := b.client.Do(request)
 	if err != nil {
