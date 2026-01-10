@@ -59,13 +59,21 @@ type Message struct {
 }
 
 func (m *Message) Commands() []string {
-	var commands = []string{}
+	return m.entities("bot_command")
+}
+
+func (m *Message) URLs() []string {
+	return m.entities("url")
+}
+
+func (m *Message) entities(kind string) []string {
+	var urls = []string{}
 	for _, e := range m.Entities {
-		if e.Type == "bot_command" {
-			commands = append(commands, m.Text[e.Offset:e.Offset+e.Length])
+		if e.Type == kind {
+			urls = append(urls, m.Text[e.Offset:e.Offset+e.Length])
 		}
 	}
-	return commands
+	return urls
 }
 
 type ChatMember struct {
