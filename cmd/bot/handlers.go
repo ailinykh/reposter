@@ -22,7 +22,7 @@ func makeHandlers(
 	repo *repository.Queries,
 ) []UpdateHandler {
 	handlers := []UpdateHandler{
-		fotd.NewGame(ctx, logger, repo),
+		fotd.NewGame(ctx, logger.With("handler", "fotd"), repo),
 		info.New(),
 	}
 
@@ -31,8 +31,8 @@ func makeHandlers(
 	password := os.Getenv("XUI_PASSWORD")
 	if len(baseUrl) > 0 && len(login) > 0 && len(password) > 0 {
 		logger.Info("xui vpn logic enabled", "username", login)
-		client := xui.NewClient(ctx, logger, baseUrl, login, password)
-		handlers = append(handlers, xui.NewHandler(client, logger, repo))
+		client := xui.NewClient(ctx, logger.With("handler", "xui"), baseUrl, login, password)
+		handlers = append(handlers, xui.NewHandler(client, logger.With("handler", "xui"), repo))
 	} else {
 		logger.Info("xui vpn logic disabled")
 	}
