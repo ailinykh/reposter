@@ -111,6 +111,16 @@ func (b *Bot) GetChatMember(userID, chatID int64) (*ChatMember, error) {
 	return i.Result, nil
 }
 
+func (b *Bot) IsUserMemberOfChat(userID, chatID int64) bool {
+	chatMember, err := b.GetChatMember(userID, chatID)
+	if err != nil {
+		b.l.Error("failed to get ChatMember", "error", err)
+		return false
+	}
+
+	return chatMember != nil && chatMember.Status != "left" && chatMember.Status != "kicked"
+}
+
 func (b *Bot) AnswerCallbackQuery(queryID, text string) error {
 	o := map[string]any{
 		"callback_query_id": queryID,

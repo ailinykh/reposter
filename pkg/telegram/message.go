@@ -110,13 +110,3 @@ func (b *Bot) DeleteMessage(chatID, messageID int64) (bool, error) {
 	}
 	return i.Result, nil
 }
-
-func (b *Bot) IsUserMemberOfChat(userID, chatID int64) bool {
-	chatMember, err := b.GetChatMember(userID, chatID)
-	if err != nil {
-		b.l.Error("failed to get ChatMember", "error", err)
-		return false
-	}
-
-	return chatMember != nil && chatMember.Status != "left" && chatMember.Status != "kicked"
-}
