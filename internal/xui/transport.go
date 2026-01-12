@@ -3,7 +3,6 @@ package xui
 import (
 	"bytes"
 	"fmt"
-	"io"
 	"mime/multipart"
 	"net/http"
 	"strings"
@@ -54,12 +53,12 @@ func (at *AuthTransport) Authorize(req *http.Request) error {
 	body := &bytes.Buffer{}
 	writer := multipart.NewWriter(body)
 
-	params := map[string]io.Reader{
-		"username": strings.NewReader(at.login),
-		"password": strings.NewReader(at.password),
+	params := map[string]any{
+		"username": at.login,
+		"password": at.password,
 	}
 
-	err := helpers.MultipartFrom(params, writer)
+	err := helpers.CreateMultipart(params, writer)
 	if err != nil {
 		return fmt.Errorf("failed to create muiltipart/form data: %w", err)
 	}

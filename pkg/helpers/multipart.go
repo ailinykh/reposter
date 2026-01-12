@@ -6,22 +6,38 @@ import (
 	"mime/multipart"
 	"os"
 	"path/filepath"
+	"strconv"
+	"strings"
 )
 
-func MultipartFrom(fields map[string]io.Reader, writer *multipart.Writer) (err error) {
-	for key, reader := range fields {
+func CreateMultipart(m map[string]any, w *multipart.Writer) (err error) {
+	for key, value := range m {
+		var reader io.Reader
 		var part io.Writer
 
-		switch r := reader.(type) {
+		switch v := value.(type) {
 		case *os.File:
-			baseName := filepath.Base(r.Name())
-			part, err = writer.CreateFormFile(key, baseName)
+			baseName := filepath.Base(v.Name())
+			reader = v
+			part, err = w.CreateFormFile(key, baseName)
+		case string:
+			part, err = w.CreateFormField(key)
+			reader = strings.NewReader(v)
+		case int:
+			part, err = w.CreateFormField(key)
+			reader = strings.NewReader(strconv.Itoa(v))
+		case int64:
+			part, err = w.CreateFormField(key)
+			reader = strings.NewReader(strconv.FormatInt(v, 10))
+		case float64:
+			part, err = w.CreateFormField(key)
+			reader = strings.NewReader(fmt.Sprintf("%.6g", v))
 		default:
-			part, err = writer.CreateFormField(key)
+			return fmt.Errorf("unsupported muiltipart/form parameter %s", v)
 		}
 
 		if err != nil {
-			return fmt.Errorf("failed to create writer: %w", err)
+			return fmt.Errorf("failed to create part: %w", err)
 		}
 
 		if _, err = io.Copy(part, reader); err != nil {
