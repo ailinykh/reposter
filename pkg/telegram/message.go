@@ -29,9 +29,10 @@ func (m *Message) URLs() []string {
 
 func (m *Message) entities(kind string) []string {
 	var urls = []string{}
+	runes := []rune(m.Text)
 	for _, e := range m.Entities {
 		if e.Type == kind {
-			urls = append(urls, m.Text[e.Offset:e.Offset+e.Length])
+			urls = append(urls, string(runes[e.Offset:e.Offset+e.Length]))
 		}
 	}
 	return urls
