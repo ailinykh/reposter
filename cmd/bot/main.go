@@ -42,12 +42,12 @@ func startRunLoop(
 			}
 
 			for _, update := range updates {
+				logger.Info("processing update", "update_id", update.ID, "message", update.Message)
 				for _, handler := range handlers {
 					if err := handler.Handle(update, bot); err != nil {
 						logger.Error("❌ failed to process update", "handler", handler, "error", err)
 					}
 				}
-				logger.Info("got update", "update", update)
 				offset = update.ID + 1
 			}
 		}
