@@ -32,6 +32,9 @@ func CreateMultipart(m map[string]any, w *multipart.Writer) (err error) {
 		case float64:
 			part, err = w.CreateFormField(key)
 			reader = strings.NewReader(fmt.Sprintf("%.6g", v))
+		case bool:
+			part, err = w.CreateFormField(key)
+			reader = strings.NewReader(fmt.Sprintf("%v", v))
 		default:
 			return fmt.Errorf("unsupported muiltipart/form parameter %s", v)
 		}
