@@ -49,13 +49,6 @@ func (yd *YtDlp) GetFormat(url string) (r *Response, err error) {
 	return r, nil
 }
 
-type Video struct {
-	*os.File
-	Thumbnail   *os.File
-	Title       string
-	Description string
-}
-
 func (yd *YtDlp) DownloadFormat(formatID string, resp *Response) (string, error) {
 	dirPath, err := os.MkdirTemp("", "yt-dlp*")
 	if err != nil {
