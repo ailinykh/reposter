@@ -10,14 +10,16 @@ import (
 	"net/http"
 )
 
-func NewBot(opts ...func(*BotConfig)) (*Bot, error) {
-	config := NewBotConfig(opts...)
+func NewBot(opts ...func(*Bot)) (*Bot, error) {
 	b := &Bot{
-		client:   config.client,
-		ctx:      config.ctx,
-		endpoint: config.endpoint,
-		token:    config.token,
-		l:        config.logger,
+		client:   http.DefaultClient,
+		ctx:      context.Background(),
+		endpoint: "https://api.telegram.org",
+		l:        slog.Default(),
+	}
+
+	for _, o := range opts {
+		o(b)
 	}
 
 	me, err := b.GetMe()
