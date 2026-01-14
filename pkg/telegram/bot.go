@@ -12,19 +12,22 @@ import (
 
 func NewBot(opts ...func(*BotConfig)) (*Bot, error) {
 	config := NewBotConfig(opts...)
-
-	me, err := getMe(config)
-	if err != nil {
-		return nil, err
-	}
-	return &Bot{
-		User:     me,
+	b := &Bot{
 		client:   config.client,
 		ctx:      config.ctx,
 		endpoint: config.endpoint,
 		token:    config.token,
-		l:        config.logger.With("username", me.Username),
-	}, nil
+		l:        config.logger,
+	}
+
+	me, err := b.GetMe()
+	if err != nil {
+		return nil, err
+	}
+
+	b.User = me
+	b.l = b.l.With("username", me.Username)
+	return b, nil
 }
 
 type Bot struct {
@@ -36,28 +39,16 @@ type Bot struct {
 	l        *slog.Logger
 }
 
-func getMe(config *BotConfig) (*User, error) {
-	resp, err := config.client.Get(config.endpoint + "/bot" + config.token + "/getMe")
-	if err != nil {
-		return nil, fmt.Errorf("failed to get bot data: %w", err)
-	}
-	defer resp.Body.Close()
-
-	var r struct {
-		Ok          bool   `json:"ok"`
-		Description string `json:"description"`
-		Result      User   `json:"result"`
+func (b *Bot) GetMe() (*User, error) {
+	var i struct {
+		Result *User `json:"result"`
 	}
 
-	if err = json.NewDecoder(resp.Body).Decode(&r); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal json: %w", err)
+	if err := b.do("getMe", nil, &i); err != nil {
+		return nil, err
 	}
 
-	if !r.Ok {
-		return nil, fmt.Errorf("telegram error: %s", r.Description)
-	}
-
-	return &r.Result, nil
+	return i.Result, nil
 }
 
 func chkErr(data []byte) error {
