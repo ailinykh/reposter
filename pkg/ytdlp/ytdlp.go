@@ -36,8 +36,8 @@ func (yd *YtDlp) GetFormat(url string) (r *Response, err error) {
 
 	out, err := exec.Command("/bin/sh", "-c", cmd).Output()
 	if err != nil {
-		yd.l.Error("failed to dump json", "url", url, "output", out)
-		return nil, fmt.Errorf("failed to dump json: %w", err)
+		yd.l.Error("failed to dump json", "url", url, "output", out, "error", err)
+		return nil, fmt.Errorf("failed to dump json: %w", NewError(err, out))
 	}
 
 	err = json.Unmarshal(out, &r)
@@ -69,10 +69,9 @@ func (yd *YtDlp) DownloadFormat(formatID string, resp *Response) (string, error)
 	), " ")
 	yd.l.Debug("executing", "command", strings.Replace(cmd, os.TempDir(), "$TMPDIR/", 1))
 
-	out, err := exec.Command("/bin/sh", "-c", cmd).CombinedOutput()
-	if err != nil {
+	if out, err := exec.Command("/bin/sh", "-c", cmd).CombinedOutput(); err != nil {
 		yd.l.Error("failed to download video", "extractor", resp.Extractor, "format_id", formatID, "url", resp.WebpageUrl, "output", out)
-		return "", fmt.Errorf("failed to dump json: %w", err)
+		return "", fmt.Errorf("failed to dump json: %w", NewError(err, out))
 	}
 
 	yd.l.Info("video downloaded successfully", "extractor", resp.Extractor, "format_id", formatID, "id", resp.ID)
