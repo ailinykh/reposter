@@ -11,6 +11,7 @@ import (
 	"github.com/ailinykh/reposter/v3/internal/repository"
 	"github.com/ailinykh/reposter/v3/internal/xui"
 	"github.com/ailinykh/reposter/v3/pkg/telegram"
+	"github.com/ailinykh/reposter/v3/pkg/ytdlp"
 )
 
 type UpdateHandler interface {
@@ -25,7 +26,13 @@ func makeHandlers(
 	handlers := []UpdateHandler{
 		fotd.NewGame(ctx, logger.With("handler", "fotd"), repo),
 		info.New(),
-		hotlink.New(logger.With("handler", "hotlink")),
+		hotlink.New(
+			logger.With("handler", "hotlink"),
+			ytdlp.New(
+				ytdlp.WithArgs(getYtDlpArgs()),
+				ytdlp.WithLogger(logger.With("tool", "yt-dlp")),
+			),
+		),
 	}
 
 	baseUrl := os.Getenv("XUI_BASE_URL")
@@ -40,4 +47,12 @@ func makeHandlers(
 	}
 
 	return handlers
+}
+
+func getYtDlpArgs() []string {
+	var args = []string{}
+	if value, ok := os.LookupEnv("PROXY"); ok {
+		args = append(args, "--proxy", value)
+	}
+	return args
 }
