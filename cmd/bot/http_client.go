@@ -20,6 +20,6 @@ func NewHttpClient(logger *slog.Logger) *http.Client {
 	}
 	return &http.Client{
 		Transport: transport,
-		Timeout:   time.Minute,
+		Timeout:   time.Minute * 5,
 	}
 }
