@@ -39,6 +39,10 @@ func (h *Handler) handleSocial(urlString string, m *telegram.Message, bot *teleg
 		return fmt.Errorf("failed to get format: %w", err)
 	}
 
+	if r.MediaType == "livestream" {
+		return fmt.Errorf("live stream is not supported yet")
+	}
+
 	const maxSize int64 = 50_000_000 // Telegram multipart/form-data limit
 	if r.Filesize > maxSize {
 		h.l.Warn("video too long", "id", r.ID, "extractor", r.Extractor, "size", r.Filesize, "duration", r.Duration)

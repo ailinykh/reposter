@@ -23,6 +23,7 @@ type Response struct {
 	Extractor   string    `json:"extractor"`
 	Filesize    int64     `json:"filesize_approx"`
 	Formats     []*Format `json:"formats"`
+MediaType   string    `json:"media_type"`
 	OriginalUrl string    `json:"original_url"`
 	WebpageUrl  string    `json:"webpage_url"`
 }
