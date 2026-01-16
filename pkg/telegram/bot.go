@@ -69,43 +69,33 @@ func chkErr(data []byte) error {
 	return fmt.Errorf("telegram error: %s", e.Description)
 }
 
-func (b *Bot) GetUpdates(offset, timeout int64) ([]*Update, error) {
-	b.l.Debug("🗳️ start polling...", "offset", offset, "timeout", timeout)
-
-	o := map[string]any{
-		"offset":  offset,
-		"timeout": timeout,
-	}
+func (b *Bot) GetUpdates(params GetUpdatesParams) ([]*Update, error) {
+	b.l.Debug("🗳️ start polling...", "offset", params.Offset, "timeout", params.Timeout)
 
 	var i struct {
 		Result []*Update `json:"result"`
 	}
 
-	if err := b.do("getUpdates", o, &i); err != nil {
+	if err := b.do("getUpdates", &params, &i); err != nil {
 		return nil, err
 	}
 
 	return i.Result, nil
 }
 
-func (b *Bot) GetChatMember(userID, chatID int64) (*ChatMember, error) {
-	o := map[string]any{
-		"user_id": userID,
-		"chat_id": chatID,
-	}
-
+func (b *Bot) GetChatMember(params GetChatMemberParams) (*ChatMember, error) {
 	var i struct {
 		Result *ChatMember `json:"result"`
 	}
 
-	if err := b.do("getChatMember", o, &i); err != nil {
+	if err := b.do("getChatMember", params, &i); err != nil {
 		return nil, err
 	}
 	return i.Result, nil
 }
 
-func (b *Bot) IsUserMemberOfChat(userID, chatID int64) bool {
-	chatMember, err := b.GetChatMember(userID, chatID)
+func (b *Bot) IsUserMemberOfChat(params GetChatMemberParams) bool {
+	chatMember, err := b.GetChatMember(params)
 	if err != nil {
 		b.l.Error("failed to get ChatMember", "error", err)
 		return false

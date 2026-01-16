@@ -35,7 +35,7 @@ func startRunLoop(
 		case <-ctx.Done():
 			return
 		default:
-			updates, err := bot.GetUpdates(offset, 300)
+			updates, err := bot.GetUpdates(telegram.GetUpdatesParams{Offset: offset, Timeout: 300})
 			if err != nil {
 				logger.Error("failed to get updates", "error", err)
 				break

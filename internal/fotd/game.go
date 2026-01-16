@@ -227,7 +227,7 @@ func (g *Game) play(m *telegram.Message, bot *telegram.Bot) error {
 
 	champion := players[rand.IntN(len(players))]
 
-	if !bot.IsUserMemberOfChat(champion.UserID, m.Chat.ID) {
+	if !bot.IsUserMemberOfChat(telegram.GetChatMemberParams{ChatID: m.Chat.ID, UserID: champion.UserID}) {
 		_, err := bot.SendMessage(m.Chat.ID, i18n("faggot_champion_left"))
 		return err
 	}
