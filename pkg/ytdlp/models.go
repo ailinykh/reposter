@@ -1,6 +1,9 @@
 package ytdlp
 
-import "fmt"
+import (
+	"fmt"
+	"os"
+)
 
 type Format struct {
 	Ext        string `json:"ext"`
@@ -23,7 +26,7 @@ type Response struct {
 	Extractor   string    `json:"extractor"`
 	Filesize    int64     `json:"filesize_approx"`
 	Formats     []*Format `json:"formats"`
-MediaType   string    `json:"media_type"`
+	MediaType   string    `json:"media_type"`
 	OriginalUrl string    `json:"original_url"`
 	WebpageUrl  string    `json:"webpage_url"`
 }
@@ -54,4 +57,19 @@ func (r *Response) SuitableFormats(size int64) (vf *Format, af *Format, err erro
 	}
 
 	return nil, nil, fmt.Errorf("no suitable formats found for size %d", size)
+}
+
+type LocalFile struct {
+	FileName string
+	FilePath string
+}
+
+type LocalVideo struct {
+	LocalFile
+	Thumb   LocalFile
+	dirPath string
+}
+
+func (f *LocalVideo) Close() {
+	_ = os.RemoveAll(f.dirPath)
 }

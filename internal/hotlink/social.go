@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"net/url"
 	"os"
-	"path"
 	"slices"
 	"strings"
 
@@ -59,11 +58,11 @@ func (h *Handler) handleSocial(urlString string, m *telegram.Message, bot *teleg
 		return err
 	}
 
-	dirPath, err := h.yd.DownloadFormat(r.FormatID, r)
+	video, err := h.yd.DownloadFormat(r.FormatID, r)
 	if err != nil {
 		return fmt.Errorf("failed to download file: %w", err)
 	}
-	defer os.RemoveAll(dirPath)
+	defer video.Close()
 
 	caption := fmt.Sprintf("<a href=\"%s\">🎞</a> <b>%s</b> <i>(by %s)</i>\n\n%s", r.OriginalUrl, r.Title, m.From.DisplayName(), r.Description)
 	if len(caption) > 1024 {
@@ -81,27 +80,18 @@ func (h *Handler) handleSocial(urlString string, m *telegram.Message, bot *teleg
 		"chat_id":            m.Chat.ID,
 	}
 
-	var files []os.DirEntry
-	if files, err = os.ReadDir(dirPath); err != nil {
-		return fmt.Errorf("failed to read directory: %w", err)
+	files := map[string]string{
+		"video": video.FilePath,
+		"thumb": video.Thumb.FilePath,
 	}
 
-	for _, file := range files {
-		filePath := path.Join(dirPath, file.Name())
-		info, _ := file.Info()
-		h.l.Info("checking file", "size", info.Size(), "file_path", strings.Replace(filePath, os.TempDir(), "$TMPDIR/", 1))
-		if !strings.HasSuffix(filePath, ".mp4") && !strings.HasSuffix(filePath, ".jpg") {
-			continue
-		}
-		f, err := os.Open(filePath)
+	for k, v := range files {
+		f, err := os.Open(v)
 		if err != nil {
-			return fmt.Errorf("failed to open file %s: %w", file.Name(), err)
+			return fmt.Errorf("failed to open file %s: %w", v, err)
 		}
-		if strings.HasSuffix(filePath, ".mp4") {
-			params["video"] = f
-		} else {
-			params["thumb"] = f
-		}
+		defer f.Close()
+		params[k] = f
 	}
 	_, err = bot.SendVideoMultipart(params)
 	return err

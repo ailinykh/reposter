@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"os"
 	"os/exec"
+	"path"
 	"strings"
 )
 
@@ -49,10 +50,10 @@ func (yd *YtDlp) GetFormat(url string) (r *Response, err error) {
 	return r, nil
 }
 
-func (yd *YtDlp) DownloadFormat(formatID string, resp *Response) (string, error) {
+func (yd *YtDlp) DownloadFormat(formatID string, resp *Response) (*LocalVideo, error) {
 	dirPath, err := os.MkdirTemp("", "yt-dlp*")
 	if err != nil {
-		return "", fmt.Errorf("failed to create temporary directory: %w", err)
+		return nil, fmt.Errorf("failed to create temporary directory: %w", err)
 	}
 
 	cmd := strings.Join(append(yd.args,
@@ -64,17 +65,27 @@ func (yd *YtDlp) DownloadFormat(formatID string, resp *Response) (string, error)
 		// "--restrict-filenames", // removes all cyrillic letters
 		"-f", formatID,
 		"-P", dirPath,
-		"-o", `"%(title)s.%(ext)s"`,
+		"-o", `"file.%(ext)s"`,
 		resp.WebpageUrl,
 	), " ")
 	yd.l.Debug("executing", "command", strings.Replace(cmd, os.TempDir(), "$TMPDIR/", 1))
 
 	if out, err := exec.Command("/bin/sh", "-c", cmd).CombinedOutput(); err != nil {
 		yd.l.Error("failed to download video", "extractor", resp.Extractor, "format_id", formatID, "url", resp.WebpageUrl, "output", out)
-		return "", fmt.Errorf("failed to dump json: %w", NewError(err, out))
+		return nil, fmt.Errorf("failed to dump json: %w", NewError(err, out))
 	}
 
 	yd.l.Info("video downloaded successfully", "extractor", resp.Extractor, "format_id", formatID, "id", resp.ID)
 
-	return dirPath, nil
+	return &LocalVideo{
+		LocalFile: LocalFile{
+			FileName: "file.mp4",
+			FilePath: path.Join(dirPath, "file.mp4"),
+		},
+		Thumb: LocalFile{
+			FileName: "file.jpg",
+			FilePath: path.Join(dirPath, "file.jpg"),
+		},
+		dirPath: dirPath,
+	}, nil
 }
