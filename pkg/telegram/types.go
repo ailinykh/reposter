@@ -54,3 +54,10 @@ type CallbackQuery struct {
 	// NOTE: to ensure message is accessible, check it's date > 0
 	MaybeInaccessibleMessage *Message `json:"message"`
 }
+
+type ParseMode string
+
+const (
+	ParseModeMarkdown ParseMode = "MarkdownV2"
+	ParseModeHTML     ParseMode = "HTML"
+)

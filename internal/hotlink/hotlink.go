@@ -30,7 +30,12 @@ func (h *Handler) handleHotlink(url string, m *telegram.Message, bot *telegram.B
 	}
 
 	if strings.HasPrefix(contentType, "image") {
-		_, err = bot.SendPhoto(m.Chat.ID, url, fmt.Sprintf(`<a href="%s">🖼</a> <b>%s</b> <i>(by %s)</i>`, url, path.Base(url), m.From.DisplayName()))
+		_, err = bot.SendPhoto(telegram.SendPhotoParams{
+			ChatID:    m.Chat.ID,
+			Photo:     url,
+			Caption:   fmt.Sprintf(`<a href="%s">🖼</a> <b>%s</b> <i>(by %s)</i>`, url, path.Base(url), m.From.DisplayName()),
+			ParseMode: telegram.ParseModeMarkdown,
+		})
 		return err
 	}
 

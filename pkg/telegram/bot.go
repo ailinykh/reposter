@@ -112,19 +112,12 @@ func (b *Bot) AnswerCallbackQuery(queryID, text string) error {
 	return b.do("answerCallbackQuery", o, nil)
 }
 
-func (b *Bot) SendPhoto(chatID int64, url, caption string) (*Message, error) {
-	o := map[string]any{
-		"chat_id":    chatID,
-		"photo":      url,
-		"caption":    caption,
-		"parse_mode": "HTML",
-	}
-
+func (b *Bot) SendPhoto(params SendPhotoParams) (*Message, error) {
 	var i struct {
 		Result *Message `json:"result"`
 	}
 
-	if err := b.do("sendPhoto", o, &i); err != nil {
+	if err := b.do("sendPhoto", params, &i); err != nil {
 		return nil, err
 	}
 	return i.Result, nil
