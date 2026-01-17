@@ -7,19 +7,24 @@ import (
 	"io"
 	"mime/multipart"
 	"net/http"
+	"reflect"
 	"strconv"
 	"strings"
 )
 
-func (b *Bot) rawMultipart(m string, in map[string]any, out any) error {
+func (b *Bot) rawMultipart(method string, in any, out any) error {
 	body := &bytes.Buffer{}
 	w := multipart.NewWriter(body)
-	if err := makeMultipart(in, w); err != nil {
+
+	m := map[string]any{}
+	fill(m, in)
+
+	if err := makeMultipart(m, w); err != nil {
 		return fmt.Errorf("failed to create muiltipart data: %w", err)
 	}
 	w.Close()
 
-	url := b.endpoint + "/bot" + b.token + "/" + m
+	url := b.endpoint + "/bot" + b.token + "/" + method
 	req, err := http.NewRequest(http.MethodPost, url, body)
 	if err != nil {
 		return fmt.Errorf("failed to create muiltipart request: %w", err)
@@ -61,11 +66,11 @@ func makeMultipart(m map[string]any, w *multipart.Writer) (err error) {
 		case float64:
 			part, err = w.CreateFormField(key)
 			reader = strings.NewReader(fmt.Sprintf("%.6g", v))
-		case bool:
+		case bool, ParseMode:
 			part, err = w.CreateFormField(key)
 			reader = strings.NewReader(fmt.Sprintf("%v", v))
 		default:
-			return fmt.Errorf("unsupported muiltipart/form parameter %s", v)
+			return fmt.Errorf("unsupported muiltipart/form parameter %v of %T", v, v)
 		}
 
 		if err != nil {
@@ -78,4 +83,25 @@ func makeMultipart(m map[string]any, w *multipart.Writer) (err error) {
 	}
 
 	return nil
+}
+
+func fill(m map[string]any, in any) {
+	v := reflect.ValueOf(in)
+	t := v.Type()
+
+	for i := 0; i < t.NumField(); i++ {
+		jsonTag := t.Field(i).Tag.Get("json")
+		if jsonTag == "" || jsonTag == "-" {
+			continue
+		}
+
+		fieldName := strings.Split(jsonTag, ",")[0]
+		omitempty := strings.Contains(jsonTag, ",omitempty")
+
+		if omitempty && v.Field(i).IsZero() {
+			continue
+		}
+
+		m[fieldName] = v.Field(i).Interface()
+	}
 }
