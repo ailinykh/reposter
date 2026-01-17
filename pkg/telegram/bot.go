@@ -123,19 +123,12 @@ func (b *Bot) SendPhoto(params SendPhotoParams) (*Message, error) {
 	return i.Result, nil
 }
 
-func (b *Bot) SendVideo(chatID int64, url, caption string) (*Message, error) {
-	o := map[string]any{
-		"chat_id":    chatID,
-		"video":      url,
-		"caption":    caption,
-		"parse_mode": "HTML",
-	}
-
+func (b *Bot) SendVideo(params SendVideoParams) (*Message, error) {
 	var i struct {
 		Result *Message `json:"result"`
 	}
 
-	if err := b.raw("sendVideo", o, &i); err != nil {
+	if err := b.raw("sendVideo", params, &i); err != nil {
 		return nil, err
 	}
 	return i.Result, nil

@@ -21,3 +21,11 @@ type SendPhotoParams struct {
 	Caption   string    `json:"caption,omitempty"`
 	ParseMode ParseMode `json:"parse_mode,omitempty"`
 }
+
+// SendVideoParams https://core.telegram.org/bots/api#sendvideo
+type SendVideoParams struct {
+	ChatID    int64     `json:"chat_id"`
+	Video     string    `json:"video"`
+	Caption   string    `json:"caption,omitempty"`
+	ParseMode ParseMode `json:"parse_mode,omitempty"`
+}
