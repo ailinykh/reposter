@@ -1,5 +1,7 @@
 package telegram
 
+import "io"
+
 type Update struct {
 	ID            int64          `json:"update_id"`
 	Message       *Message       `json:"message"`
@@ -61,3 +63,18 @@ const (
 	ParseModeMarkdown ParseMode = "MarkdownV2"
 	ParseModeHTML     ParseMode = "HTML"
 )
+
+type InputFile interface {
+	isInputFile() // marker interface
+}
+
+type InputFileURL string
+
+func (InputFileURL) isInputFile() {}
+
+type InputFileLocal struct {
+	Name   string
+	Reader io.Reader
+}
+
+func (InputFileLocal) isInputFile() {}

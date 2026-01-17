@@ -27,7 +27,7 @@ func (h *Handler) handleHotlink(url string, m *telegram.Message, bot *telegram.B
 	if strings.HasPrefix(contentType, "video") {
 		_, err = bot.SendVideo(telegram.SendVideoParams{
 			ChatID:    m.Chat.ID,
-			Video:     url,
+			Video:     telegram.InputFileURL(url),
 			Caption:   fmt.Sprintf(`<a href="%s">🔗</a> <b>%s</b> <i>(by %s)</i>`, url, path.Base(url), m.From.DisplayName()),
 			ParseMode: telegram.ParseModeHTML,
 		})
@@ -37,7 +37,7 @@ func (h *Handler) handleHotlink(url string, m *telegram.Message, bot *telegram.B
 	if strings.HasPrefix(contentType, "image") {
 		_, err = bot.SendPhoto(telegram.SendPhotoParams{
 			ChatID:    m.Chat.ID,
-			Photo:     url,
+			Photo:     telegram.InputFileURL(url),
 			Caption:   fmt.Sprintf(`<a href="%s">🖼</a> <b>%s</b> <i>(by %s)</i>`, url, path.Base(url), m.From.DisplayName()),
 			ParseMode: telegram.ParseModeHTML,
 		})

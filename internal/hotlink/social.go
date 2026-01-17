@@ -70,29 +70,34 @@ func (h *Handler) handleSocial(urlString string, m *telegram.Message, bot *teleg
 	}
 	caption = strings.ToValidUTF8(caption, "")
 
-	params := map[string]any{
-		"caption":            caption,
-		"duration":           r.Duration,
-		"width":              r.Width,
-		"height":             r.Height,
-		"supports_streaming": true,
-		"parse_mode":         "HTML",
-		"chat_id":            m.Chat.ID,
+	v, err := os.Open(video.FilePath)
+	if err != nil {
+		return fmt.Errorf("failed to open local video %s: %w", video.FilePath, err)
 	}
+	defer video.Close()
 
-	files := map[string]string{
-		"video": video.FilePath,
-		"thumb": video.Thumb.FilePath,
+	thumb, err := os.Open(video.Thumb.FilePath)
+	if err != nil {
+		return fmt.Errorf("failed to open local video thumb %s: %w", video.Thumb.FilePath, err)
 	}
+	defer thumb.Close()
 
-	for k, v := range files {
-		f, err := os.Open(v)
-		if err != nil {
-			return fmt.Errorf("failed to open file %s: %w", v, err)
-		}
-		defer f.Close()
-		params[k] = f
-	}
-	_, err = bot.SendVideoMultipart(params)
+	_, err = bot.SendVideo(telegram.SendVideoParams{
+		ChatID: m.Chat.ID,
+		Video: telegram.InputFileLocal{
+			Name:   video.FileName,
+			Reader: v,
+		},
+		Duration: r.Duration,
+		Width:    r.Width,
+		Height:   r.Height,
+		Thumbnail: telegram.InputFileLocal{
+			Name:   video.Thumb.FileName,
+			Reader: thumb,
+		},
+		Caption:           caption,
+		ParseMode:         telegram.ParseModeHTML,
+		SupportsStreaming: true,
+	})
 	return err
 }

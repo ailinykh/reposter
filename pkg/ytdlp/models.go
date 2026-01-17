@@ -11,8 +11,8 @@ type Format struct {
 	Format     string `json:"format"`
 	FormatID   string `json:"format_id"`
 	FormatNote string `json:"format_note"`
-	Height     int64  `json:"height"`
-	Width      int64  `json:"width"`
+	Height     int    `json:"height"`
+	Width      int    `json:"width"`
 	ACodec     string `json:"acodec"`
 	VCodec     string `json:"vcodec"`
 }
@@ -22,7 +22,7 @@ type Response struct {
 	ID          string    `json:"id"`
 	Title       string    `json:"title"`
 	Description string    `json:"description"`
-	Duration    int64     `json:"duration"`
+	Duration    int       `json:"duration"`
 	Extractor   string    `json:"extractor"`
 	Filesize    int64     `json:"filesize_approx"`
 	Formats     []*Format `json:"formats"`

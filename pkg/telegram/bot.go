@@ -117,6 +117,19 @@ func (b *Bot) SendPhoto(params SendPhotoParams) (*Message, error) {
 		Result *Message `json:"result"`
 	}
 
+	if _, ok := params.Photo.(InputFileLocal); ok {
+		m := map[string]any{
+			"chat_id":    params.ChatID,
+			"photo":      params.Photo,
+			"caption":    params.Caption,
+			"parse_mode": string(params.ParseMode),
+		}
+		if err := b.rawMultipart("sendPhoto", m, &i); err != nil {
+			return nil, err
+		}
+		return i.Result, nil
+	}
+
 	if err := b.raw("sendPhoto", params, &i); err != nil {
 		return nil, err
 	}
@@ -126,6 +139,23 @@ func (b *Bot) SendPhoto(params SendPhotoParams) (*Message, error) {
 func (b *Bot) SendVideo(params SendVideoParams) (*Message, error) {
 	var i struct {
 		Result *Message `json:"result"`
+	}
+
+	if _, ok := params.Video.(InputFileLocal); ok {
+		m := map[string]any{
+			"chat_id":    params.ChatID,
+			"video":      params.Video,
+			"duration":   params.Duration,
+			"width":      params.Width,
+			"height":     params.Height,
+			"thumbnail":  params.Thumbnail,
+			"caption":    params.Caption,
+			"parse_mode": string(params.ParseMode),
+		}
+		if err := b.rawMultipart("sendVideo", m, &i); err != nil {
+			return nil, err
+		}
+		return i.Result, nil
 	}
 
 	if err := b.raw("sendVideo", params, &i); err != nil {

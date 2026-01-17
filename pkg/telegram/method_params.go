@@ -17,15 +17,20 @@ type GetChatMemberParams struct {
 // SendPhotoParams https://core.telegram.org/bots/api#sendphoto
 type SendPhotoParams struct {
 	ChatID    int64     `json:"chat_id"`
-	Photo     string    `json:"photo"`
+	Photo     InputFile `json:"photo"`
 	Caption   string    `json:"caption,omitempty"`
 	ParseMode ParseMode `json:"parse_mode,omitempty"`
 }
 
 // SendVideoParams https://core.telegram.org/bots/api#sendvideo
 type SendVideoParams struct {
-	ChatID    int64     `json:"chat_id"`
-	Video     string    `json:"video"`
-	Caption   string    `json:"caption,omitempty"`
-	ParseMode ParseMode `json:"parse_mode,omitempty"`
+	ChatID            int64     `json:"chat_id"`
+	Video             InputFile `json:"video"`
+	Duration          int       `json:"duration,omitempty"`
+	Width             int       `json:"width,omitempty"`
+	Height            int       `json:"height,omitempty"`
+	Thumbnail         InputFile `json:"thumbnail,omitempty"`
+	Caption           string    `json:"caption,omitempty"`
+	ParseMode         ParseMode `json:"parse_mode,omitempty"`
+	SupportsStreaming bool      `json:"supports_streaming,omitempty"`
 }
