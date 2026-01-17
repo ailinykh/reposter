@@ -60,8 +60,8 @@ func (r *Response) SuitableFormats(size int64) (vf *Format, af *Format, err erro
 }
 
 type LocalFile struct {
-	FileName string
-	FilePath string
+	*os.File
+	Name string
 }
 
 type LocalVideo struct {
@@ -71,5 +71,7 @@ type LocalVideo struct {
 }
 
 func (f *LocalVideo) Close() {
+	f.Thumb.Close()
+	f.LocalFile.Close()
 	_ = os.RemoveAll(f.dirPath)
 }

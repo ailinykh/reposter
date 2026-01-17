@@ -77,14 +77,26 @@ func (yd *YtDlp) DownloadFormat(formatID string, resp *Response) (*LocalVideo, e
 
 	yd.l.Info("video downloaded successfully", "extractor", resp.Extractor, "format_id", formatID, "id", resp.ID)
 
+	fPath := path.Join(dirPath, "file.mp4")
+	f, err := os.Open(fPath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to open local video %s: %w", fPath, err)
+	}
+
+	tPath := path.Join(dirPath, "file.jpg")
+	t, err := os.Open(tPath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to open local video thumb %s: %w", tPath, err)
+	}
+
 	return &LocalVideo{
 		LocalFile: LocalFile{
-			FileName: "file.mp4",
-			FilePath: path.Join(dirPath, "file.mp4"),
+			File: f,
+			Name: "file.mp4",
 		},
 		Thumb: LocalFile{
-			FileName: "file.jpg",
-			FilePath: path.Join(dirPath, "file.jpg"),
+			File: t,
+			Name: "file.jpg",
 		},
 		dirPath: dirPath,
 	}, nil

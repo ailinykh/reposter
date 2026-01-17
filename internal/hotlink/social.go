@@ -3,7 +3,6 @@ package hotlink
 import (
 	"fmt"
 	"net/url"
-	"os"
 	"slices"
 	"strings"
 
@@ -70,30 +69,18 @@ func (h *Handler) handleSocial(urlString string, m *telegram.Message, bot *teleg
 	}
 	caption = strings.ToValidUTF8(caption, "")
 
-	v, err := os.Open(video.FilePath)
-	if err != nil {
-		return fmt.Errorf("failed to open local video %s: %w", video.FilePath, err)
-	}
-	defer video.Close()
-
-	thumb, err := os.Open(video.Thumb.FilePath)
-	if err != nil {
-		return fmt.Errorf("failed to open local video thumb %s: %w", video.Thumb.FilePath, err)
-	}
-	defer thumb.Close()
-
 	_, err = bot.SendVideo(telegram.SendVideoParams{
 		ChatID: m.Chat.ID,
 		Video: telegram.InputFileLocal{
-			Name:   video.FileName,
-			Reader: v,
+			Name:   video.Name,
+			Reader: video.File,
 		},
 		Duration: r.Duration,
 		Width:    r.Width,
 		Height:   r.Height,
 		Thumbnail: telegram.InputFileLocal{
-			Name:   video.Thumb.FileName,
-			Reader: thumb,
+			Name:   video.Thumb.Name,
+			Reader: video.Thumb.File,
 		},
 		Caption:           caption,
 		ParseMode:         telegram.ParseModeHTML,
