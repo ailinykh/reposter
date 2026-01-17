@@ -8,12 +8,6 @@ type GetUpdatesParams struct {
 	AllowedUpdates []string `json:"allowed_updates,omitempty"`
 }
 
-// GetChatMemberParams https://core.telegram.org/bots/api#getchatmember
-type GetChatMemberParams struct {
-	ChatID int64 `json:"chat_id"`
-	UserID int64 `json:"user_id"`
-}
-
 // SendPhotoParams https://core.telegram.org/bots/api#sendphoto
 type SendPhotoParams struct {
 	ChatID    int64     `json:"chat_id"`
@@ -33,4 +27,10 @@ type SendVideoParams struct {
 	Caption           string    `json:"caption,omitempty"`
 	ParseMode         ParseMode `json:"parse_mode,omitempty"`
 	SupportsStreaming bool      `json:"supports_streaming,omitempty"`
+}
+
+// GetChatMemberParams https://core.telegram.org/bots/api#getchatmember
+type GetChatMemberParams struct {
+	ChatID int64 `json:"chat_id"`
+	UserID int64 `json:"user_id"`
 }
