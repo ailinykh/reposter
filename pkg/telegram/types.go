@@ -32,11 +32,11 @@ type User struct {
 }
 
 func (u *User) DisplayName() string {
-	if len(u.Username) > 0 {
+	if u.Username != "" {
 		return u.Username
 	}
 
-	if len(u.LastName) == 0 {
+	if u.LastName != "" {
 		return u.FirstName
 	}
 

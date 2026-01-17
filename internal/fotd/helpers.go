@@ -38,11 +38,11 @@ func calculateStatistics(rounds []repository.GetRoundsRow, filter func(repositor
 }
 
 func displayName(p repository.GamePlayer) string {
-	if len(p.Username) > 0 {
+	if p.Username != "" {
 		return p.Username
 	}
 
-	if len(p.LastName) == 0 {
+	if p.LastName != "" {
 		return p.FirstName
 	}
 
@@ -50,7 +50,7 @@ func displayName(p repository.GamePlayer) string {
 }
 
 func mention(p repository.GamePlayer) string {
-	if len(p.Username) > 0 {
+	if p.Username != "" {
 		return "@" + p.Username
 	}
 	return fmt.Sprintf(`<a href="tg://user?id=%d">%s %s</a>`, p.UserID, p.FirstName, p.LastName)

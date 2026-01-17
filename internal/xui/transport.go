@@ -39,11 +39,9 @@ func (at *AuthTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 		return resp, err
 	}
 
-	if len(resp.Header["Content-Type"]) > 0 {
-		if resp.Header["Content-Type"][0] != "application/json; charset=utf-8" {
-			at.cookie = nil
-			return at.RoundTrip(req)
-		}
+	if resp.Header.Get("Content-Type") != "application/json; charset=utf-8" {
+		at.cookie = nil
+		return at.RoundTrip(req)
 	}
 
 	return resp, err

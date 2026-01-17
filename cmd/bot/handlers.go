@@ -38,7 +38,7 @@ func makeHandlers(
 	baseUrl := os.Getenv("XUI_BASE_URL")
 	login := os.Getenv("XUI_LOGIN")
 	password := os.Getenv("XUI_PASSWORD")
-	if len(baseUrl) > 0 && len(login) > 0 && len(password) > 0 {
+	if baseUrl != "" && login != "" && password != "" {
 		logger.Info("xui vpn logic enabled", "username", login)
 		client := xui.NewClient(ctx, logger.With("handler", "xui"), baseUrl, login, password)
 		handlers = append(handlers, xui.NewHandler(client, logger.With("handler", "xui"), repo))

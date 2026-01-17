@@ -21,7 +21,7 @@ func NewError(err error, data []byte) *Error {
 	}
 
 	stdErr := strings.ToLower(string(execErr.Stderr))
-	if len(stdErr) == 0 {
+	if stdErr == "" {
 		stdErr = string(data)
 	}
 

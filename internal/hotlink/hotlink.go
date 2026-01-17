@@ -17,7 +17,7 @@ func (h *Handler) handleHotlink(url string, m *telegram.Message, bot *telegram.B
 	}
 
 	contentType := res.Header.Get("Content-Type")
-	if len(contentType) == 0 {
+	if contentType == "" {
 		h.l.Error("content type not found", "url", url)
 		return nil
 	}
