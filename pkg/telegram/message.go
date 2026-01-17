@@ -60,7 +60,7 @@ func (b *Bot) SendMessage(chatID int64, text string, opts ...any) (*Message, err
 		Result *Message `json:"result"`
 	}
 
-	if err := b.do("sendMessage", req, &res); err != nil {
+	if err := b.raw("sendMessage", req, &res); err != nil {
 		return nil, err
 	}
 
@@ -90,7 +90,7 @@ func (b *Bot) EditMessageText(chatID, messageID int64, text string, opts ...any)
 		Result *Message `json:"result"`
 	}
 
-	if err := b.do("editMessageText", req, &res); err != nil {
+	if err := b.raw("editMessageText", req, &res); err != nil {
 		return nil, err
 	}
 
@@ -105,7 +105,7 @@ func (b *Bot) DeleteMessage(chatID, messageID int64) (bool, error) {
 	var i struct {
 		Result bool `json:"result"`
 	}
-	if err := b.do("deleteMessage", o, &i); err != nil {
+	if err := b.raw("deleteMessage", o, &i); err != nil {
 		return false, err
 	}
 	return i.Result, nil

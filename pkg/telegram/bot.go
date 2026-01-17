@@ -46,7 +46,7 @@ func (b *Bot) GetMe() (*User, error) {
 		Result *User `json:"result"`
 	}
 
-	if err := b.do("getMe", nil, &i); err != nil {
+	if err := b.raw("getMe", nil, &i); err != nil {
 		return nil, err
 	}
 
@@ -76,7 +76,7 @@ func (b *Bot) GetUpdates(params GetUpdatesParams) ([]*Update, error) {
 		Result []*Update `json:"result"`
 	}
 
-	if err := b.do("getUpdates", &params, &i); err != nil {
+	if err := b.raw("getUpdates", &params, &i); err != nil {
 		return nil, err
 	}
 
@@ -88,7 +88,7 @@ func (b *Bot) GetChatMember(params GetChatMemberParams) (*ChatMember, error) {
 		Result *ChatMember `json:"result"`
 	}
 
-	if err := b.do("getChatMember", params, &i); err != nil {
+	if err := b.raw("getChatMember", params, &i); err != nil {
 		return nil, err
 	}
 	return i.Result, nil
@@ -109,7 +109,7 @@ func (b *Bot) AnswerCallbackQuery(queryID, text string) error {
 		"callback_query_id": queryID,
 		"text":              text,
 	}
-	return b.do("answerCallbackQuery", o, nil)
+	return b.raw("answerCallbackQuery", o, nil)
 }
 
 func (b *Bot) SendPhoto(params SendPhotoParams) (*Message, error) {
@@ -117,7 +117,7 @@ func (b *Bot) SendPhoto(params SendPhotoParams) (*Message, error) {
 		Result *Message `json:"result"`
 	}
 
-	if err := b.do("sendPhoto", params, &i); err != nil {
+	if err := b.raw("sendPhoto", params, &i); err != nil {
 		return nil, err
 	}
 	return i.Result, nil
@@ -135,18 +135,18 @@ func (b *Bot) SendVideo(chatID int64, url, caption string) (*Message, error) {
 		Result *Message `json:"result"`
 	}
 
-	if err := b.do("sendVideo", o, &i); err != nil {
+	if err := b.raw("sendVideo", o, &i); err != nil {
 		return nil, err
 	}
 	return i.Result, nil
 }
 
-func (b *Bot) do(method string, o, i any) error {
+func (b *Bot) raw(method string, out, in any) error {
 	url := b.endpoint + "/bot" + b.token + "/" + method
 	var body io.Reader
-	if o != nil {
+	if out != nil {
 		buf := new(bytes.Buffer)
-		err := json.NewEncoder(buf).Encode(&o)
+		err := json.NewEncoder(buf).Encode(&out)
 		if err != nil {
 			return fmt.Errorf("failed to pack data %w", err)
 		}
@@ -175,5 +175,5 @@ func (b *Bot) do(method string, o, i any) error {
 		return err
 	}
 
-	return json.Unmarshal(data, i)
+	return json.Unmarshal(data, in)
 }
