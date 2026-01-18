@@ -64,6 +64,7 @@ const (
 	ParseModeHTML     ParseMode = "HTML"
 )
 
+// InputFile
 type InputFile interface {
 	isInputFile() // marker interface
 }
@@ -78,3 +79,32 @@ type InputFileLocal struct {
 }
 
 func (InputFileLocal) isInputFile() {}
+
+// ReplyParameters
+type ReplyParameters struct {
+	MessageID int64  `json:"message_id"`
+	Quote     string `json:"quote,omitempty"`
+}
+
+// ReplyMarkup
+type ReplyMarkup interface {
+	isReplyMarkup() // marker interface
+}
+
+type InlineKeyboardMarkup struct {
+	InlineKeyboard [][]InlineKeyboardButton `json:"inline_keyboard"`
+}
+
+type InlineKeyboardButton struct {
+	Text         string `json:"text"`
+	CallbackData string `json:"callback_data,omitempty"`
+	URL          string `json:"url,omitempty"`
+}
+
+func (InlineKeyboardMarkup) isReplyMarkup() {}
+
+// LinkPreviewOptions
+type LinkPreviewOptions struct {
+	IsDisabled bool   `json:"is_disabled,omitempty"`
+	URL        string `json:"url,omitempty"`
+}

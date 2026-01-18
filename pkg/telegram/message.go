@@ -1,7 +1,5 @@
 package telegram
 
-import "maps"
-
 type Message struct {
 	ID                int64    `json:"message_id"`
 	Date              int      `json:"date"`
@@ -38,59 +36,24 @@ func (m *Message) entities(kind string) []string {
 	return urls
 }
 
-func (b *Bot) SendMessage(chatID int64, text string, opts ...any) (*Message, error) {
-	req := map[string]any{
-		"chat_id":    chatID,
-		"text":       text,
-		"parse_mode": "HTML",
-		"link_preview_options": map[string]any{
-			"is_disabled": true,
-		},
-	}
-	for _, opt := range opts {
-		switch o := opt.(type) {
-		case map[string]any:
-			maps.Copy(req, o)
-		default:
-			break
-		}
-	}
-
+func (b *Bot) SendMessage(params SendMessageParams) (*Message, error) {
 	var res struct {
 		Result *Message `json:"result"`
 	}
 
-	if err := b.raw("sendMessage", req, &res); err != nil {
+	if err := b.raw("sendMessage", params, &res); err != nil {
 		return nil, err
 	}
 
 	return res.Result, nil
 }
 
-func (b *Bot) EditMessageText(chatID, messageID int64, text string, opts ...any) (*Message, error) {
-	req := map[string]any{
-		"chat_id":    chatID,
-		"message_id": messageID,
-		"text":       text,
-		"parse_mode": "HTML",
-		"link_preview_options": map[string]any{
-			"is_disabled": true,
-		},
-	}
-	for _, opt := range opts {
-		switch o := opt.(type) {
-		case map[string]any:
-			maps.Copy(req, o)
-		default:
-			break
-		}
-	}
-
+func (b *Bot) EditMessageText(params EditMessageTextParams) (*Message, error) {
 	var res struct {
 		Result *Message `json:"result"`
 	}
 
-	if err := b.raw("editMessageText", req, &res); err != nil {
+	if err := b.raw("editMessageText", params, &res); err != nil {
 		return nil, err
 	}
 

@@ -47,12 +47,13 @@ func (h *Handler) handleSocial(urlString string, m *telegram.Message, bot *teleg
 		if !m.Chat.Private() {
 			return nil // be silent in group chat
 		}
-		_, err := bot.SendMessage(m.Chat.ID, fmt.Sprintf("%s\n<b>⏳ video too long: %d sec</b>", r.Title, r.Duration), map[string]any{
-			"reply_parameters": map[string]any{
-				"message_id": m.ID,
-				"quote":      urlString,
+		_, err = bot.SendMessage(telegram.SendMessageParams{
+			ChatID:    m.Chat.ID,
+			Text:      fmt.Sprintf("%s\n<b>⏳ video too long: %d sec</b>", r.Title, r.Duration),
+			ParseMode: telegram.ParseModeHTML,
+			ReplyParameters: &telegram.ReplyParameters{
+				Quote: urlString,
 			},
-			"parse_mode": "HTML",
 		})
 		return err
 	}

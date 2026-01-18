@@ -8,6 +8,16 @@ type GetUpdatesParams struct {
 	AllowedUpdates []string `json:"allowed_updates,omitempty"`
 }
 
+// SendMessageParams https://core.telegram.org/bots/api#sendmessage
+type SendMessageParams struct {
+	ChatID             int64               `json:"chat_id"`
+	Text               string              `json:"text"`
+	ParseMode          ParseMode           `json:"parse_mode,omitempty"`
+	LinkPreviewOptions *LinkPreviewOptions `json:"link_preview_options,omitempty"`
+	ReplyParameters    *ReplyParameters    `json:"reply_parameters,omitempty"`
+	ReplyMarkup        ReplyMarkup         `json:"reply_markup,omitempty"`
+}
+
 // SendPhotoParams https://core.telegram.org/bots/api#sendphoto
 type SendPhotoParams struct {
 	ChatID    int64     `json:"chat_id"`
@@ -33,4 +43,16 @@ type SendVideoParams struct {
 type GetChatMemberParams struct {
 	ChatID int64 `json:"chat_id"`
 	UserID int64 `json:"user_id"`
+}
+
+// EditMessageTextParams https://core.telegram.org/bots/api#editmessagetext
+type EditMessageTextParams struct {
+	ChatID             int64               `json:"chat_id"`
+	MessageID          int64               `json:"message_id,omitempty"`
+	InlineMessageID    string              `json:"inline_message_id,omitempty"`
+	Text               string              `json:"text"`
+	ParseMode          ParseMode           `json:"parse_mode,omitempty"`
+	LinkPreviewOptions *LinkPreviewOptions `json:"link_preview_options,omitempty"`
+	ReplyParameters    *ReplyParameters    `json:"reply_parameters,omitempty"`
+	ReplyMarkup        ReplyMarkup         `json:"reply_markup,omitempty"`
 }

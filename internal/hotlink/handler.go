@@ -23,6 +23,7 @@ type Handler struct {
 }
 
 func (h *Handler) Handle(u *telegram.Update, bot *telegram.Bot) error {
+	// TODO: respect type="text_link" as well
 	if u.Message == nil || len(u.Message.URLs()) == 0 {
 		return nil
 	}
@@ -33,13 +34,15 @@ func (h *Handler) Handle(u *telegram.Update, bot *telegram.Bot) error {
 				return h.handleHotlink(urlString, u.Message, bot)
 			}
 			h.l.Error("failed to process url", "error", err, "url", urlString)
-			// _, _ = bot.SendMessage(u.Message.Chat.ID, "😬 "+err.Error(), map[string]any{
-			// 	"reply_parameters": map[string]any{
-			// 		"message_id": u.Message.ID,
-			// 		"quote":      urlString,
-			// 		"link_preview_options": map[string]any{
-			// 			"is_disabled": true,
-			// 		},
+			// _, _ = bot.SendMessage(telegram.SendMessageParams{
+			// 	ChatID: u.Message.Chat.ID,
+			// 	Text:   "😬 " + err.Error(),
+			// 	LinkPreviewOptions: &telegram.LinkPreviewOptions{
+			// 		IsDisabled: true,
+			// 	},
+			// 	ReplyParameters: &telegram.ReplyParameters{
+			// 		MessageID: u.Message.ID,
+			// 		Quote:     urlString,
 			// 	},
 			// })
 			return err

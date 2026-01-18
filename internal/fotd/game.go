@@ -55,7 +55,11 @@ func (g *Game) Handle(u *telegram.Update, bot *telegram.Bot) error {
 
 	if u.Message.Chat.Private() {
 		if u.Message.Chat.Type == "private" {
-			_, err := bot.SendMessage(u.Message.Chat.ID, i18n("faggot_not_available_for_private"))
+			_, err := bot.SendMessage(telegram.SendMessageParams{
+				ChatID:    u.Message.Chat.ID,
+				Text:      i18n("faggot_not_available_for_private"),
+				ParseMode: telegram.ParseModeHTML,
+			})
 			return err
 		}
 	}
@@ -86,7 +90,11 @@ func (g *Game) Handle(u *telegram.Update, bot *telegram.Bot) error {
 
 func (g *Game) rules(m *telegram.Message, bot *telegram.Bot) error {
 	g.l.Debug("game rules requested", "chat_id", m.Chat.ID, "user_id", m.From.ID)
-	_, err := bot.SendMessage(m.Chat.ID, i18n("faggot_rules"))
+	_, err := bot.SendMessage(telegram.SendMessageParams{
+		ChatID:    m.Chat.ID,
+		Text:      i18n("faggot_rules"),
+		ParseMode: telegram.ParseModeHTML,
+	})
 	return err
 }
 
@@ -102,10 +110,19 @@ func (g *Game) reg(m *telegram.Message, bot *telegram.Bot) error {
 					LastName:  m.From.LastName,
 					Username:  m.From.Username,
 				})
-				_, err = bot.SendMessage(m.Chat.ID, i18n("faggot_info_updated"))
+				_, err = bot.SendMessage(telegram.SendMessageParams{
+					ChatID:    m.Chat.ID,
+					Text:      i18n("faggot_info_updated"),
+					ParseMode: telegram.ParseModeHTML,
+				})
 				return err
 			}
-			_, err := bot.SendMessage(m.Chat.ID, i18n("faggot_already_in_game"))
+
+			_, err := bot.SendMessage(telegram.SendMessageParams{
+				ChatID:    m.Chat.ID,
+				Text:      i18n("faggot_already_in_game"),
+				ParseMode: telegram.ParseModeHTML,
+			})
 			return err
 		}
 	}
@@ -121,7 +138,11 @@ func (g *Game) reg(m *telegram.Message, bot *telegram.Bot) error {
 		return err
 	}
 
-	_, err = bot.SendMessage(m.Chat.ID, i18n("faggot_added_to_game"))
+	_, err = bot.SendMessage(telegram.SendMessageParams{
+		ChatID:    m.Chat.ID,
+		Text:      i18n("faggot_added_to_game"),
+		ParseMode: telegram.ParseModeHTML,
+	})
 	return err
 }
 
@@ -138,7 +159,11 @@ func (g *Game) stats(year string, m *telegram.Message, bot *telegram.Bot) error 
 	})
 
 	if len(entries) == 0 {
-		_, err := bot.SendMessage(m.Chat.ID, i18n("faggot_stats_empty", year))
+		_, err := bot.SendMessage(telegram.SendMessageParams{
+			ChatID:    m.Chat.ID,
+			Text:      i18n("faggot_stats_empty", year),
+			ParseMode: telegram.ParseModeHTML,
+		})
 		return err
 	}
 
@@ -155,7 +180,11 @@ func (g *Game) stats(year string, m *telegram.Message, bot *telegram.Bot) error 
 		messages = append(messages, message)
 	}
 	messages = append(messages, "", i18n("faggot_stats_bottom", len(players)))
-	_, err = bot.SendMessage(m.Chat.ID, strings.Join(messages, "\n"))
+	_, err = bot.SendMessage(telegram.SendMessageParams{
+		ChatID:    m.Chat.ID,
+		Text:      strings.Join(messages, "\n"),
+		ParseMode: telegram.ParseModeHTML,
+	})
 	return err
 }
 
@@ -175,7 +204,11 @@ func (g *Game) all(m *telegram.Message, bot *telegram.Bot) error {
 		messages = append(messages, message)
 	}
 	messages = append(messages, "", i18n("faggot_all_bottom", len(players)))
-	_, err = bot.SendMessage(m.Chat.ID, strings.Join(messages, "\n"))
+	_, err = bot.SendMessage(telegram.SendMessageParams{
+		ChatID:    m.Chat.ID,
+		Text:      strings.Join(messages, "\n"),
+		ParseMode: telegram.ParseModeHTML,
+	})
 	return err
 }
 
@@ -191,7 +224,11 @@ func (g *Game) me(m *telegram.Message, bot *telegram.Bot) error {
 		return gr.UserID == m.From.ID
 	})
 
-	_, err = bot.SendMessage(m.Chat.ID, i18n("faggot_me", m.From.DisplayName(), entries[m.From.DisplayName()]))
+	_, err = bot.SendMessage(telegram.SendMessageParams{
+		ChatID:    m.Chat.ID,
+		Text:      i18n("faggot_me", m.From.DisplayName(), entries[m.From.DisplayName()]),
+		ParseMode: telegram.ParseModeHTML,
+	})
 	return err
 }
 
@@ -207,10 +244,18 @@ func (g *Game) play(m *telegram.Message, bot *telegram.Bot) error {
 	players, _ := g.repo.GetPlayers(g.ctx, m.Chat.ID)
 	switch len(players) {
 	case 0:
-		_, err := bot.SendMessage(m.Chat.ID, i18n("faggot_no_players", m.From.DisplayName()))
+		_, err := bot.SendMessage(telegram.SendMessageParams{
+			ChatID:    m.Chat.ID,
+			Text:      i18n("faggot_no_players", m.From.DisplayName()),
+			ParseMode: telegram.ParseModeHTML,
+		})
 		return err
 	case 1:
-		_, err := bot.SendMessage(m.Chat.ID, i18n("faggot_not_enough_players"))
+		_, err := bot.SendMessage(telegram.SendMessageParams{
+			ChatID:    m.Chat.ID,
+			Text:      i18n("faggot_not_enough_players"),
+			ParseMode: telegram.ParseModeHTML,
+		})
 		return err
 	}
 
@@ -220,7 +265,11 @@ func (g *Game) play(m *telegram.Message, bot *telegram.Bot) error {
 	for _, r := range rounds {
 		if r.CreatedAt.Truncate(24 * time.Hour).Equal(today) {
 			// already have `displayName(champion)` in `Username` field
-			_, err := bot.SendMessage(m.Chat.ID, i18n("faggot_champion_known", r.Username))
+			_, err := bot.SendMessage(telegram.SendMessageParams{
+				ChatID:    m.Chat.ID,
+				Text:      i18n("faggot_champion_known", r.Username),
+				ParseMode: telegram.ParseModeHTML,
+			})
 			return err
 		}
 	}
@@ -228,7 +277,11 @@ func (g *Game) play(m *telegram.Message, bot *telegram.Bot) error {
 	champion := players[rand.IntN(len(players))]
 
 	if !bot.IsUserMemberOfChat(telegram.GetChatMemberParams{ChatID: m.Chat.ID, UserID: champion.UserID}) {
-		_, err := bot.SendMessage(m.Chat.ID, i18n("faggot_champion_left"))
+		_, err := bot.SendMessage(telegram.SendMessageParams{
+			ChatID:    m.Chat.ID,
+			Text:      i18n("faggot_champion_left"),
+			ParseMode: telegram.ParseModeHTML,
+		})
 		return err
 	}
 
@@ -254,7 +307,11 @@ func (g *Game) play(m *telegram.Message, bot *telegram.Bot) error {
 			phrase = i18n(template, mention(champion))
 		}
 
-		_, err := bot.SendMessage(m.Chat.ID, phrase)
+		_, err := bot.SendMessage(telegram.SendMessageParams{
+			ChatID:    m.Chat.ID,
+			Text:      phrase,
+			ParseMode: telegram.ParseModeHTML,
+		})
 		if err != nil {
 			g.l.Error("failed to send message", "error", err)
 		}

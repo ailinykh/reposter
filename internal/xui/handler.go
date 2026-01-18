@@ -62,7 +62,10 @@ func (h *Handler) Handle(u *telegram.Update, bot *telegram.Bot) error {
 
 		h.l.Error("unexpected vpn state", "state", state)
 		h.state.Delete(u.Message.Chat.ID)
-		_, err := bot.SendMessage(u.Message.Chat.ID, i18n("vpn_unexpected_state"))
+		_, err := bot.SendMessage(telegram.SendMessageParams{
+			ChatID: u.Message.Chat.ID,
+			Text:   i18n("vpn_unexpected_state"),
+		})
 		return err
 	}
 
@@ -75,7 +78,10 @@ func (h *Handler) Handle(u *telegram.Update, bot *telegram.Bot) error {
 			if h.checkAccess(u.Message) {
 				return h.help(u.Message, bot)
 			}
-			_, err := bot.SendMessage(u.Message.Chat.ID, i18n("vpn_mislead"))
+			_, err := bot.SendMessage(telegram.SendMessageParams{
+				ChatID: u.Message.Chat.ID,
+				Text:   i18n("vpn_mislead"),
+			})
 			return err
 		}
 	}
@@ -109,7 +115,18 @@ func (h *Handler) help(m *telegram.Message, bot *telegram.Bot) error {
 		return fmt.Errorf("failed to get keys: %w", err)
 	}
 
-	_, err = bot.SendMessage(m.Chat.ID, i18n("vpn_welcome"), h.makeKeyboard(keys))
+	var isDisabled = true
+	_, err = bot.SendMessage(telegram.SendMessageParams{
+		ChatID:    m.Chat.ID,
+		Text:      i18n("vpn_welcome"),
+		ParseMode: telegram.ParseModeHTML,
+		LinkPreviewOptions: &telegram.LinkPreviewOptions{
+			IsDisabled: isDisabled,
+		},
+		ReplyMarkup: telegram.InlineKeyboardMarkup{
+			InlineKeyboard: h.makeKeyboard(keys),
+		},
+	})
 	return err
 }
 
@@ -140,7 +157,10 @@ func (h *Handler) handlePayload(m *telegram.Message, bot *telegram.Bot) error {
 func (h *Handler) createKey(messageID int64, m *telegram.Message, bot *telegram.Bot) error {
 	h.l.Info("create new key", "name", m.Text)
 	if len(m.Text) > 64 {
-		_, err := bot.SendMessage(m.Chat.ID, i18n("vpn_enter_create_key_name_too_long"))
+		_, err := bot.SendMessage(telegram.SendMessageParams{
+			ChatID: m.Chat.ID,
+			Text:   i18n("vpn_enter_create_key_name_too_long"),
+		})
 		return err
 	}
 
@@ -155,10 +175,17 @@ func (h *Handler) createKey(messageID int64, m *telegram.Message, bot *telegram.
 		return fmt.Errorf("failed to delete message: %w", err)
 	}
 
-	buttons := [][]map[string]any{
-		{{"text": i18n("vpn_button_manage_key"), "callback_data": "vpn_manage_key"}},
+	buttons := [][]telegram.InlineKeyboardButton{
+		{{Text: i18n("vpn_button_manage_key"), CallbackData: "vpn_manage_key"}},
 	}
-	_, err = bot.SendMessage(m.Chat.ID, i18n("vpn_key_created", key.Key), telegram.NewInlineKeyboard(buttons))
+	_, err = bot.SendMessage(telegram.SendMessageParams{
+		ChatID:    m.Chat.ID,
+		Text:      i18n("vpn_key_created", key.Key),
+		ParseMode: telegram.ParseModeHTML,
+		ReplyMarkup: telegram.InlineKeyboardMarkup{
+			InlineKeyboard: buttons,
+		},
+	})
 	return err
 }
 
@@ -175,8 +202,8 @@ func (h *Handler) deleteKey(messageID int64, m *telegram.Message, bot *telegram.
 		return fmt.Errorf("failed to delete message: %w", err)
 	}
 
-	buttons := [][]map[string]any{
-		{{"text": i18n("vpn_button_manage_key"), "callback_data": "vpn_manage_key"}},
+	buttons := [][]telegram.InlineKeyboardButton{
+		{{Text: i18n("vpn_button_manage_key"), CallbackData: "vpn_manage_key"}},
 	}
 
 	for _, k := range keys {
@@ -184,12 +211,25 @@ func (h *Handler) deleteKey(messageID int64, m *telegram.Message, bot *telegram.
 			if err = h.client.DeleteKey(k); err != nil {
 				return fmt.Errorf("failed to delete key: %w", err)
 			}
-			_, err = bot.SendMessage(m.Chat.ID, i18n("vpn_key_deleted", k.Title), telegram.NewInlineKeyboard(buttons))
+			_, err = bot.SendMessage(telegram.SendMessageParams{
+				ChatID:    m.Chat.ID,
+				Text:      i18n("vpn_key_deleted", k.Title),
+				ParseMode: telegram.ParseModeHTML,
+				ReplyMarkup: telegram.InlineKeyboardMarkup{
+					InlineKeyboard: buttons,
+				},
+			})
 			return err
 		}
 	}
 
-	_, err = bot.SendMessage(m.Chat.ID, i18n("vpn_key_not_found"), telegram.NewInlineKeyboard(buttons))
+	_, err = bot.SendMessage(telegram.SendMessageParams{
+		ChatID: m.Chat.ID,
+		Text:   i18n("vpn_key_not_found"),
+		ReplyMarkup: telegram.InlineKeyboardMarkup{
+			InlineKeyboard: buttons,
+		},
+	})
 	return err
 }
 
@@ -206,10 +246,18 @@ func (h *Handler) handleCallback(c *telegram.CallbackQuery, bot *telegram.Bot) e
 	case "vpn_create_key":
 		h.state.Set(m.Chat.ID, fmt.Sprintf("vpn_enter_new_key_name_expected_%d", m.ID))
 
-		buttons := [][]map[string]any{
-			{{"text": i18n("vpn_button_back"), "callback_data": "vpn_back"}},
+		buttons := [][]telegram.InlineKeyboardButton{
+			{{Text: i18n("vpn_button_back"), CallbackData: "vpn_back"}},
 		}
-		_, err := bot.EditMessageText(m.Chat.ID, m.ID, i18n("vpn_enter_create_key_name"), telegram.NewInlineKeyboard(buttons))
+		_, err := bot.EditMessageText(telegram.EditMessageTextParams{
+			ChatID:    m.Chat.ID,
+			MessageID: m.ID,
+			Text:      i18n("vpn_enter_create_key_name"),
+			ParseMode: telegram.ParseModeHTML,
+			ReplyMarkup: telegram.InlineKeyboardMarkup{
+				InlineKeyboard: buttons,
+			},
+		})
 		return err
 
 	case "vpn_delete_key":
@@ -225,10 +273,18 @@ func (h *Handler) handleCallback(c *telegram.CallbackQuery, bot *telegram.Bot) e
 			text = append(text, i18n("vpn_enter_delete_key_name_item", key.Title))
 		}
 
-		buttons := [][]map[string]any{
-			{{"text": i18n("vpn_button_cancel"), "callback_data": "vpn_back"}},
+		buttons := [][]telegram.InlineKeyboardButton{
+			{{Text: i18n("vpn_button_cancel"), CallbackData: "vpn_back"}},
 		}
-		_, err = bot.EditMessageText(m.Chat.ID, m.ID, strings.Join(text, "\n"), telegram.NewInlineKeyboard(buttons))
+		_, err = bot.EditMessageText(telegram.EditMessageTextParams{
+			ChatID:    m.Chat.ID,
+			MessageID: m.ID,
+			Text:      strings.Join(text, "\n"),
+			ParseMode: telegram.ParseModeHTML,
+			ReplyMarkup: telegram.InlineKeyboardMarkup{
+				InlineKeyboard: buttons,
+			},
+		})
 		return err
 
 	case "vpn_manage_key":
@@ -243,11 +299,19 @@ func (h *Handler) handleCallback(c *telegram.CallbackQuery, bot *telegram.Bot) e
 		}
 		text = append(text, i18n("vpn_key_list_bottom", len(keys)))
 
-		buttons := [][]map[string]any{
-			{{"text": i18n("vpn_button_remove_key"), "callback_data": "vpn_delete_key"}},
-			{{"text": i18n("vpn_button_back"), "callback_data": "vpn_back"}},
+		buttons := [][]telegram.InlineKeyboardButton{
+			{{Text: i18n("vpn_button_remove_key"), CallbackData: "vpn_delete_key"}},
+			{{Text: i18n("vpn_button_back"), CallbackData: "vpn_back"}},
 		}
-		_, err = bot.EditMessageText(m.Chat.ID, m.ID, strings.Join(text, "\n"), telegram.NewInlineKeyboard(buttons))
+		_, err = bot.EditMessageText(telegram.EditMessageTextParams{
+			ChatID:    m.Chat.ID,
+			MessageID: m.ID,
+			Text:      strings.Join(text, "\n"),
+			ParseMode: telegram.ParseModeHTML,
+			ReplyMarkup: telegram.InlineKeyboardMarkup{
+				InlineKeyboard: buttons,
+			},
+		})
 		return err
 
 	case "vpn_back":
@@ -255,8 +319,18 @@ func (h *Handler) handleCallback(c *telegram.CallbackQuery, bot *telegram.Bot) e
 		if err != nil {
 			return fmt.Errorf("failed to get keys: %w", err)
 		}
-
-		_, err = bot.EditMessageText(m.Chat.ID, m.ID, i18n("vpn_welcome"), h.makeKeyboard(keys))
+		_, err = bot.EditMessageText(telegram.EditMessageTextParams{
+			ChatID:    m.Chat.ID,
+			MessageID: m.ID,
+			Text:      i18n("vpn_welcome"),
+			ParseMode: telegram.ParseModeHTML,
+			LinkPreviewOptions: &telegram.LinkPreviewOptions{
+				IsDisabled: true,
+			},
+			ReplyMarkup: telegram.InlineKeyboardMarkup{
+				InlineKeyboard: h.makeKeyboard(keys),
+			},
+		})
 		return err
 
 	default:
@@ -265,20 +339,20 @@ func (h *Handler) handleCallback(c *telegram.CallbackQuery, bot *telegram.Bot) e
 	}
 }
 
-func (h *Handler) makeKeyboard(keys []*VpnKey) map[string]any {
-	buttons := [][]map[string]any{}
+func (h *Handler) makeKeyboard(keys []*VpnKey) [][]telegram.InlineKeyboardButton {
+	buttons := [][]telegram.InlineKeyboardButton{}
 
 	if len(keys) < 10 {
-		buttons = append(buttons, []map[string]any{
-			{"text": i18n("vpn_button_create_key"), "callback_data": "vpn_create_key"},
+		buttons = append(buttons, []telegram.InlineKeyboardButton{
+			{Text: i18n("vpn_button_create_key"), CallbackData: "vpn_create_key"},
 		})
 	}
 
 	if len(keys) > 0 {
-		buttons = append(buttons, []map[string]any{
-			{"text": i18n("vpn_button_manage_key"), "callback_data": "vpn_manage_key"},
+		buttons = append(buttons, []telegram.InlineKeyboardButton{
+			{Text: i18n("vpn_button_manage_key"), CallbackData: "vpn_manage_key"},
 		})
 	}
 
-	return telegram.NewInlineKeyboard(buttons)
+	return buttons
 }
