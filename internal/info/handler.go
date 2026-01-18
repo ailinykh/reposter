@@ -33,24 +33,24 @@ func (i *Info) Handle(u *telegram.Update, bot *telegram.Bot) error {
 		"",
 	}
 
-	if m.ReplyTo != nil {
-		if m.ReplyTo.ForwardFromChat != nil {
+	if m.ReplyToMessage != nil {
+		if m.ReplyToMessage.ForwardFromChat != nil {
 			info = append(info,
 				"💬 forward from chat",
-				fmt.Sprintf("ID: <b>%d</b>", m.ReplyTo.ForwardFromChat.ID),
-				fmt.Sprintf("Title: <b>%s</b>", m.ReplyTo.ForwardFromChat.Title),
-				fmt.Sprintf("Type: <b>%s</b>", m.ReplyTo.ForwardFromChat.Type),
+				fmt.Sprintf("ID: <b>%d</b>", m.ReplyToMessage.ForwardFromChat.ID),
+				fmt.Sprintf("Title: <b>%s</b>", m.ReplyToMessage.ForwardFromChat.Title),
+				fmt.Sprintf("Type: <b>%s</b>", m.ReplyToMessage.ForwardFromChat.Type),
 				"",
 			)
 		}
-		if m.ReplyTo.ForwardFrom != nil {
+		if m.ReplyToMessage.ForwardFrom != nil {
 			info = append(info,
 				"👤 forward from",
-				fmt.Sprintf("ID: <b>%d</b>", m.ReplyTo.ForwardFrom.ID),
-				fmt.Sprintf("First: <b>%s</b>", m.ReplyTo.ForwardFrom.FirstName),
-				fmt.Sprintf("Last: <b>%s</b>", m.ReplyTo.ForwardFrom.LastName),
-				fmt.Sprintf("Username: <b>%s</b>", m.ReplyTo.ForwardFrom.Username),
-				fmt.Sprintf("SenderName: <b>%s</b>", m.ReplyTo.ForwardSenderName),
+				fmt.Sprintf("ID: <b>%d</b>", m.ReplyToMessage.ForwardFrom.ID),
+				fmt.Sprintf("First: <b>%s</b>", m.ReplyToMessage.ForwardFrom.FirstName),
+				fmt.Sprintf("Last: <b>%s</b>", m.ReplyToMessage.ForwardFrom.LastName),
+				fmt.Sprintf("Username: <b>%s</b>", m.ReplyToMessage.ForwardFrom.Username),
+				fmt.Sprintf("SenderName: <b>%s</b>", m.ReplyToMessage.ForwardSenderName),
 				"",
 			)
 		}

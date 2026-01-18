@@ -2,19 +2,19 @@ package telegram
 
 type Message struct {
 	ID                int64    `json:"message_id"`
+	From              *User    `json:"from,omitempty"`
 	Date              int      `json:"date"`
 	Chat              *Chat    `json:"chat"`
-	From              *User    `json:"from"`
-	ForwardFrom       *User    `json:"forward_from"`
-	ForwardFromChat   *Chat    `json:"forward_from_chat"`
-	ForwardSenderName string   `json:"forward_sender_name"`
-	ReplyTo           *Message `json:"reply_to_message"`
-	Text              string   `json:"text"`
+	ForwardFrom       *User    `json:"forward_from,omitempty"`
+	ForwardFromChat   *Chat    `json:"forward_from_chat,omitempty"`
+	ForwardSenderName string   `json:"forward_sender_name,omitempty"`
+	ReplyToMessage    *Message `json:"reply_to_message,omitempty"`
+	Text              string   `json:"text,omitempty"`
 	Entities          []struct {
+		Type   string `json:"type"`
 		Offset int    `json:"offset"`
 		Length int    `json:"length"`
-		Type   string `json:"type"`
-	}
+	} `json:"entities,omitempty"`
 }
 
 func (m *Message) Commands() []string {
@@ -73,3 +73,11 @@ func (b *Bot) DeleteMessage(chatID, messageID int64) (bool, error) {
 	}
 	return i.Result, nil
 }
+
+// ParseMode https://core.telegram.org/bots/api#formatting-options
+type ParseMode string
+
+const (
+	ParseModeMarkdown ParseMode = "MarkdownV2"
+	ParseModeHTML     ParseMode = "HTML"
+)
