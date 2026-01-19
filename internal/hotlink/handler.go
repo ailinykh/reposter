@@ -33,19 +33,25 @@ func (h *Handler) Handle(u *telegram.Update, bot *telegram.Bot) error {
 			if errors.Is(err, ErrURLNotSupported) {
 				return h.handleHotlink(urlString, u.Message, bot)
 			}
+
 			h.l.Error("failed to process url", "error", err, "url", urlString)
-			// _, _ = bot.SendMessage(telegram.SendMessageParams{
-			// 	ChatID: u.Message.Chat.ID,
-			// 	Text:   "😬 " + err.Error(),
-			// 	LinkPreviewOptions: &telegram.LinkPreviewOptions{
-			// 		IsDisabled: true,
-			// 	},
-			// 	ReplyParameters: &telegram.ReplyParameters{
-			// 		MessageID: u.Message.ID,
-			// 		Quote:     urlString,
-			// 	},
-			// })
-			return err
+
+			var ytErr *ytdlp.Error
+			if !errors.As(err, &ytErr) {
+				return err
+			}
+			// Youtube related error occured, we can notify user
+			_, _ = bot.SendMessage(telegram.SendMessageParams{
+				ChatID: u.Message.Chat.ID,
+				Text:   "😬 " + ytErr.Error(),
+				LinkPreviewOptions: &telegram.LinkPreviewOptions{
+					IsDisabled: true,
+				},
+				ReplyParameters: &telegram.ReplyParameters{
+					MessageID: u.Message.ID,
+					Quote:     urlString,
+				},
+			})
 		}
 	}
 
