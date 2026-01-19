@@ -62,6 +62,7 @@ func (r *Response) SuitableFormats(size int64) (vf *Format, af *Format, err erro
 type LocalFile struct {
 	*os.File
 	Name string
+	Path string
 }
 
 type LocalVideo struct {

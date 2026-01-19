@@ -93,10 +93,12 @@ func (yd *YtDlp) DownloadFormat(formatID string, resp *Response) (*LocalVideo, e
 		LocalFile: LocalFile{
 			File: f,
 			Name: "file.mp4",
+			Path: fPath,
 		},
 		Thumb: LocalFile{
 			File: t,
 			Name: "file.jpg",
+			Path: tPath,
 		},
 		dirPath: dirPath,
 	}, nil
