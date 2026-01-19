@@ -65,7 +65,7 @@ func (h *Handler) handleSocial(urlString string, m *telegram.Message, bot *teleg
 	if err != nil {
 		return fmt.Errorf("failed to download file: %w", err)
 	}
-	defer video.Close()
+	defer video.Dispose()
 
 	t := telegram.InputFileLocal{
 		Name:   video.Thumb.Name,
@@ -79,8 +79,7 @@ func (h *Handler) handleSocial(urlString string, m *telegram.Message, bot *teleg
 				Name:   video.Thumb.Name,
 				Reader: cropped.File,
 			}
-			defer cropped.Close()
-			defer os.Remove(cropped.Path)
+			defer cropped.Dispose()
 		} else {
 			h.l.Error("failed to crop thumbnail", "error", err)
 		}

@@ -65,13 +65,18 @@ type LocalFile struct {
 	Path string
 }
 
+func (f *LocalFile) Dispose() {
+	f.Close()
+	_ = os.RemoveAll(f.Path)
+}
+
 type LocalVideo struct {
 	LocalFile
 	Thumb   LocalFile
 	dirPath string
 }
 
-func (f *LocalVideo) Close() {
+func (f *LocalVideo) Dispose() {
 	f.Thumb.Close()
 	f.LocalFile.Close()
 	_ = os.RemoveAll(f.dirPath)
