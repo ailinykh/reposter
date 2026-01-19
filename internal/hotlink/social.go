@@ -3,10 +3,13 @@ package hotlink
 import (
 	"fmt"
 	"net/url"
+	"os"
 	"slices"
 	"strings"
 
+	"github.com/ailinykh/reposter/v3/pkg/ffmpeg"
 	"github.com/ailinykh/reposter/v3/pkg/telegram"
+	"github.com/ailinykh/reposter/v3/pkg/ytdlp"
 )
 
 func (h *Handler) handleSocial(urlString string, m *telegram.Message, bot *telegram.Bot) error {
@@ -64,6 +67,25 @@ func (h *Handler) handleSocial(urlString string, m *telegram.Message, bot *teleg
 	}
 	defer video.Close()
 
+	t := telegram.InputFileLocal{
+		Name:   video.Thumb.Name,
+		Reader: video.Thumb.File,
+	}
+
+	if r.MediaType == "short" {
+		cropped, err := h.croppedThumb(r, video)
+		if err == nil {
+			t = telegram.InputFileLocal{
+				Name:   video.Thumb.Name,
+				Reader: cropped.File,
+			}
+			defer cropped.Close()
+			defer os.Remove(cropped.Path)
+		} else {
+			h.l.Error("failed to crop thumbnail", "error", err)
+		}
+	}
+
 	caption := fmt.Sprintf("<a href=\"%s\">🎞</a> <b>%s</b> <i>(by %s)</i>\n\n%s", r.OriginalUrl, r.Title, m.From.DisplayName(), r.Description)
 	if len(caption) > 1024 {
 		caption = caption[:1024]
@@ -76,16 +98,40 @@ func (h *Handler) handleSocial(urlString string, m *telegram.Message, bot *teleg
 			Name:   video.Name,
 			Reader: video.File,
 		},
-		Duration: r.Duration,
-		Width:    r.Width,
-		Height:   r.Height,
-		Thumbnail: telegram.InputFileLocal{
-			Name:   video.Thumb.Name,
-			Reader: video.Thumb.File,
-		},
+		Duration:          r.Duration,
+		Width:             r.Width,
+		Height:            r.Height,
+		Thumbnail:         t,
 		Caption:           caption,
 		ParseMode:         telegram.ParseModeHTML,
 		SupportsStreaming: true,
 	})
 	return err
+}
+
+func (h *Handler) croppedThumb(r *ytdlp.Response, v *ytdlp.LocalVideo) (*ytdlp.LocalFile, error) {
+	info, err := ffmpeg.GetInfo(v.Thumb.Path)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(info.Streams) < 1 {
+		return nil, fmt.Errorf("no stream found at %s", v.Thumb.Path)
+	}
+
+	w := r.Width * info.Streams[0].Height / r.Height
+	cropped, err := ffmpeg.Crop(v.Thumb.Path, w, info.Streams[0].Height)
+	if err != nil {
+		return nil, fmt.Errorf("failed to crop %s: %w", v.Thumb.Path, err)
+	}
+
+	f, err := os.Open(cropped)
+	if err != nil {
+		return nil, fmt.Errorf("failed to open cropped file: %w", err)
+	}
+
+	return &ytdlp.LocalFile{
+		File: f,
+		Path: cropped,
+	}, nil
 }
