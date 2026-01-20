@@ -1,20 +1,23 @@
 package telegram
 
-type Message struct {
-	ID                int64    `json:"message_id"`
-	From              *User    `json:"from,omitempty"`
-	Date              int      `json:"date"`
-	Chat              *Chat    `json:"chat"`
-	ForwardFrom       *User    `json:"forward_from,omitempty"`
-	ForwardFromChat   *Chat    `json:"forward_from_chat,omitempty"`
-	ForwardSenderName string   `json:"forward_sender_name,omitempty"`
-	ReplyToMessage    *Message `json:"reply_to_message,omitempty"`
-	Text              string   `json:"text,omitempty"`
-	Entities          []struct {
+type MessageEntity struct {
 		Type   string `json:"type"`
 		Offset int    `json:"offset"`
 		Length int    `json:"length"`
-	} `json:"entities,omitempty"`
+	}
+
+type Message struct {
+	ID                int64           `json:"message_id"`
+	From              *User           `json:"from,omitempty"`
+	Date              int             `json:"date"`
+	Chat              *Chat           `json:"chat"`
+	ForwardFrom       *User           `json:"forward_from,omitempty"`
+	ForwardFromChat   *Chat           `json:"forward_from_chat,omitempty"`
+	ForwardSenderName string          `json:"forward_sender_name,omitempty"`
+	ReplyToMessage    *Message        `json:"reply_to_message,omitempty"`
+	Text              string          `json:"text,omitempty"`
+	Entities          []MessageEntity `json:"entities,omitempty"`
+	Caption           string          `json:"caption,omitempty"`
 }
 
 func (m *Message) Commands() []string {
