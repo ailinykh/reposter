@@ -12,6 +12,14 @@ import (
 	"github.com/google/uuid"
 )
 
+type Cache struct {
+	ID        uuid.UUID
+	Key       string
+	Value     json.RawMessage
+	CreatedAt time.Time
+	UpdatedAt time.Time
+}
+
 type ChatSetting struct {
 	ID        uuid.UUID
 	ChatID    int64
