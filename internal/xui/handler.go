@@ -171,7 +171,10 @@ func (h *Handler) createKey(messageID int64, m *telegram.Message, bot *telegram.
 
 	h.state.Delete(m.Chat.ID)
 
-	if _, err := bot.DeleteMessage(m.Chat.ID, messageID); err != nil {
+	if _, err := bot.DeleteMessage(telegram.DeleteMessageParams{
+		ChatID:    m.Chat.ID,
+		MessageID: messageID,
+	}); err != nil {
 		return fmt.Errorf("failed to delete message: %w", err)
 	}
 
@@ -198,7 +201,10 @@ func (h *Handler) deleteKey(messageID int64, m *telegram.Message, bot *telegram.
 
 	h.state.Delete(m.Chat.ID)
 
-	if _, err := bot.DeleteMessage(m.Chat.ID, messageID); err != nil {
+	if _, err := bot.DeleteMessage(telegram.DeleteMessageParams{
+		ChatID:    m.Chat.ID,
+		MessageID: messageID,
+	}); err != nil {
 		return fmt.Errorf("failed to delete message: %w", err)
 	}
 

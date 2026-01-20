@@ -56,3 +56,9 @@ type EditMessageTextParams struct {
 	ReplyParameters    *ReplyParameters    `json:"reply_parameters,omitempty"`
 	ReplyMarkup        ReplyMarkup         `json:"reply_markup,omitempty"`
 }
+
+// DeleteMessageParams https://core.telegram.org/bots/api#deletemessage
+type DeleteMessageParams struct {
+	ChatID    int64 `json:"chat_id"`
+	MessageID int64 `json:"message_id"`
+}

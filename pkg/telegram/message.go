@@ -1,10 +1,10 @@
 package telegram
 
 type MessageEntity struct {
-		Type   string `json:"type"`
-		Offset int    `json:"offset"`
-		Length int    `json:"length"`
-	}
+	Type   string `json:"type"`
+	Offset int    `json:"offset"`
+	Length int    `json:"length"`
+}
 
 type Message struct {
 	ID                int64           `json:"message_id"`
@@ -65,15 +65,11 @@ func (b *Bot) EditMessageText(params EditMessageTextParams) (*Message, error) {
 	return res.Result, nil
 }
 
-func (b *Bot) DeleteMessage(chatID, messageID int64) (bool, error) {
-	o := map[string]any{
-		"chat_id":    chatID,
-		"message_id": messageID,
-	}
+func (b *Bot) DeleteMessage(params DeleteMessageParams) (bool, error) {
 	var i struct {
 		Result bool `json:"result"`
 	}
-	if err := b.raw("deleteMessage", o, &i); err != nil {
+	if err := b.raw("deleteMessage", params, &i); err != nil {
 		return false, err
 	}
 	return i.Result, nil
