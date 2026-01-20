@@ -17,6 +17,8 @@ type Message struct {
 	ReplyToMessage    *Message        `json:"reply_to_message,omitempty"`
 	Text              string          `json:"text,omitempty"`
 	Entities          []MessageEntity `json:"entities,omitempty"`
+	Photo             []*PhotoSize    `json:"photo,omitempty"`
+	Video             *Video          `json:"video,omitempty"`
 	Caption           string          `json:"caption,omitempty"`
 }
 
