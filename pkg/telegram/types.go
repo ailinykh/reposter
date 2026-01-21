@@ -46,6 +46,57 @@ func (c *Chat) Private() bool {
 	return c.Type == "private"
 }
 
+// Message https://core.telegram.org/bots/api#message
+type Message struct {
+	ID                int64           `json:"message_id"`
+	From              *User           `json:"from,omitempty"`
+	Date              int             `json:"date"`
+	Chat              *Chat           `json:"chat"`
+	ForwardFrom       *User           `json:"forward_from,omitempty"`
+	ForwardFromChat   *Chat           `json:"forward_from_chat,omitempty"`
+	ForwardSenderName string          `json:"forward_sender_name,omitempty"`
+	ReplyToMessage    *Message        `json:"reply_to_message,omitempty"`
+	Text              string          `json:"text,omitempty"`
+	Entities          []MessageEntity `json:"entities,omitempty"`
+	Photo             []*PhotoSize    `json:"photo,omitempty"`
+	Video             *Video          `json:"video,omitempty"`
+	Caption           string          `json:"caption,omitempty"`
+}
+
+func (m *Message) Commands() []string {
+	return m.entities("bot_command")
+}
+
+func (m *Message) URLs() []string {
+	return m.entities("url")
+}
+
+func (m *Message) entities(kind string) []string {
+	var urls = []string{}
+	runes := []rune(m.Text)
+	for _, e := range m.Entities {
+		if e.Type == kind {
+			urls = append(urls, string(runes[e.Offset:e.Offset+e.Length]))
+		}
+	}
+	return urls
+}
+
+// ParseMode https://core.telegram.org/bots/api#formatting-options
+type ParseMode string
+
+const (
+	ParseModeMarkdown ParseMode = "MarkdownV2"
+	ParseModeHTML     ParseMode = "HTML"
+)
+
+// MessageEntity https://core.telegram.org/bots/api#messageentity
+type MessageEntity struct {
+	Type   string `json:"type"`
+	Offset int    `json:"offset"`
+	Length int    `json:"length"`
+}
+
 // PhotoSize https://core.telegram.org/bots/api#photosize
 type PhotoSize struct {
 	FileID       string `json:"file_id"`

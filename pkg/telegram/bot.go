@@ -41,34 +41,7 @@ type Bot struct {
 	l        *slog.Logger
 }
 
-func (b *Bot) GetMe() (*User, error) {
-	var i struct {
-		Result *User `json:"result"`
-	}
-
-	if err := b.raw("getMe", nil, &i); err != nil {
-		return nil, err
-	}
-
-	return i.Result, nil
-}
-
-func chkErr(data []byte) error {
-	var e struct {
-		Ok          bool           `json:"ok"`
-		Code        int            `json:"error_code"`
-		Description string         `json:"description"`
-		Parameters  map[string]any `json:"parameters"`
-	}
-	if err := json.Unmarshal(data, &e); err != nil {
-		return fmt.Errorf("failed to parse error: %w", err)
-	}
-	if e.Ok {
-		return nil
-	}
-	return fmt.Errorf("telegram error: %s", e.Description)
-}
-
+// GetUpdates https://core.telegram.org/bots/api#getupdates
 func (b *Bot) GetUpdates(params GetUpdatesParams) ([]*Update, error) {
 	b.l.Debug("🗳️ start polling...", "offset", params.Offset, "timeout", params.Timeout)
 
@@ -83,6 +56,52 @@ func (b *Bot) GetUpdates(params GetUpdatesParams) ([]*Update, error) {
 	return i.Result, nil
 }
 
+// GetMe https://core.telegram.org/bots/api#getme
+func (b *Bot) GetMe() (*User, error) {
+	var i struct {
+		Result *User `json:"result"`
+	}
+
+	if err := b.raw("getMe", nil, &i); err != nil {
+		return nil, err
+	}
+
+	return i.Result, nil
+}
+
+// SendMessage https://core.telegram.org/bots/api#sendmessage
+func (b *Bot) SendMessage(params SendMessageParams) (*Message, error) {
+	var res struct {
+		Result *Message `json:"result"`
+	}
+
+	if err := b.raw("sendMessage", params, &res); err != nil {
+		return nil, err
+	}
+
+	return res.Result, nil
+}
+
+// SendVideo https://core.telegram.org/bots/api#sendvideo
+func (b *Bot) SendVideo(params SendVideoParams) (*Message, error) {
+	var i struct {
+		Result *Message `json:"result"`
+	}
+
+	if _, ok := params.Video.(InputFileLocal); ok {
+		if err := b.rawMultipart("sendVideo", params, &i); err != nil {
+			return nil, err
+		}
+		return i.Result, nil
+	}
+
+	if err := b.raw("sendVideo", params, &i); err != nil {
+		return nil, err
+	}
+	return i.Result, nil
+}
+
+// GetChatMember https://core.telegram.org/bots/api#getchatmember
 func (b *Bot) GetChatMember(params GetChatMemberParams) (*ChatMember, error) {
 	var i struct {
 		Result *ChatMember `json:"result"`
@@ -104,6 +123,7 @@ func (b *Bot) IsUserMemberOfChat(params GetChatMemberParams) bool {
 	return chatMember != nil && chatMember.Status != "left" && chatMember.Status != "kicked"
 }
 
+// AnswerCallbackQuery https://core.telegram.org/bots/api#answercallbackquery
 func (b *Bot) AnswerCallbackQuery(queryID, text string) error {
 	o := map[string]any{
 		"callback_query_id": queryID,
@@ -130,20 +150,26 @@ func (b *Bot) SendPhoto(params SendPhotoParams) (*Message, error) {
 	return i.Result, nil
 }
 
-func (b *Bot) SendVideo(params SendVideoParams) (*Message, error) {
-	var i struct {
+// EditMessageText https://core.telegram.org/bots/api#editmessagetext
+func (b *Bot) EditMessageText(params EditMessageTextParams) (*Message, error) {
+	var res struct {
 		Result *Message `json:"result"`
 	}
 
-	if _, ok := params.Video.(InputFileLocal); ok {
-		if err := b.rawMultipart("sendVideo", params, &i); err != nil {
-			return nil, err
-		}
-		return i.Result, nil
+	if err := b.raw("editMessageText", params, &res); err != nil {
+		return nil, err
 	}
 
-	if err := b.raw("sendVideo", params, &i); err != nil {
-		return nil, err
+	return res.Result, nil
+}
+
+// DeleteMessage https://core.telegram.org/bots/api#deletemessage
+func (b *Bot) DeleteMessage(params DeleteMessageParams) (bool, error) {
+	var i struct {
+		Result bool `json:"result"`
+	}
+	if err := b.raw("deleteMessage", params, &i); err != nil {
+		return false, err
 	}
 	return i.Result, nil
 }
@@ -183,4 +209,20 @@ func (b *Bot) raw(method string, out, in any) error {
 	}
 
 	return json.Unmarshal(data, in)
+}
+
+func chkErr(data []byte) error {
+	var e struct {
+		Ok          bool           `json:"ok"`
+		Code        int            `json:"error_code"`
+		Description string         `json:"description"`
+		Parameters  map[string]any `json:"parameters"`
+	}
+	if err := json.Unmarshal(data, &e); err != nil {
+		return fmt.Errorf("failed to parse error: %w", err)
+	}
+	if e.Ok {
+		return nil
+	}
+	return fmt.Errorf("telegram error: %s", e.Description)
 }
