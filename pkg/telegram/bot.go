@@ -44,73 +44,41 @@ type Bot struct {
 // GetUpdates https://core.telegram.org/bots/api#getupdates
 func (b *Bot) GetUpdates(params GetUpdatesParams) ([]*Update, error) {
 	b.l.Debug("🗳️ start polling...", "offset", params.Offset, "timeout", params.Timeout)
-
-	var i struct {
-		Result []*Update `json:"result"`
-	}
-
-	if err := b.raw("getUpdates", &params, &i); err != nil {
-		return nil, err
-	}
-
-	return i.Result, nil
+	var rv []*Update
+	err := b.raw("getUpdates", params, &rv)
+	return rv, err
 }
 
 // GetMe https://core.telegram.org/bots/api#getme
 func (b *Bot) GetMe() (*User, error) {
-	var i struct {
-		Result *User `json:"result"`
-	}
-
-	if err := b.raw("getMe", nil, &i); err != nil {
-		return nil, err
-	}
-
-	return i.Result, nil
+	var rv *User
+	err := b.raw("getMe", nil, &rv)
+	return rv, err
 }
 
 // SendMessage https://core.telegram.org/bots/api#sendmessage
 func (b *Bot) SendMessage(params SendMessageParams) (*Message, error) {
-	var res struct {
-		Result *Message `json:"result"`
-	}
-
-	if err := b.raw("sendMessage", params, &res); err != nil {
-		return nil, err
-	}
-
-	return res.Result, nil
+	var rv *Message
+	err := b.raw("sendMessage", params, &rv)
+	return rv, err
 }
 
 // SendVideo https://core.telegram.org/bots/api#sendvideo
 func (b *Bot) SendVideo(params SendVideoParams) (*Message, error) {
-	var i struct {
-		Result *Message `json:"result"`
-	}
-
+	var rv *Message
 	if _, ok := params.Video.(InputFileLocal); ok {
-		if err := b.rawMultipart("sendVideo", params, &i); err != nil {
-			return nil, err
-		}
-		return i.Result, nil
+		err := b.rawMultipart("sendVideo", params, &rv)
+		return rv, err
 	}
-
-	if err := b.raw("sendVideo", params, &i); err != nil {
-		return nil, err
-	}
-	return i.Result, nil
+	err := b.raw("sendVideo", params, &rv)
+	return rv, err
 }
 
 // GetChatMember https://core.telegram.org/bots/api#getchatmember
 func (b *Bot) GetChatMember(params GetChatMemberParams) (*ChatMember, error) {
-	var i struct {
-		Result *ChatMember `json:"result"`
-	}
-
-	if err := b.raw("getChatMember", params, &i); err != nil {
-		return nil, err
-	}
-	return i.Result, nil
+	var rv *ChatMember
+	err := b.raw("getChatMember", params, &rv)
+	return rv, err
 }
 
 func (b *Bot) IsUserMemberOfChat(params GetChatMemberParams) bool {
@@ -133,45 +101,27 @@ func (b *Bot) AnswerCallbackQuery(queryID, text string) error {
 }
 
 func (b *Bot) SendPhoto(params SendPhotoParams) (*Message, error) {
-	var i struct {
-		Result *Message `json:"result"`
-	}
-
+	var rv *Message
 	if _, ok := params.Photo.(InputFileLocal); ok {
-		if err := b.rawMultipart("sendPhoto", params, &i); err != nil {
-			return nil, err
-		}
-		return i.Result, nil
+		err := b.rawMultipart("sendPhoto", params, &rv)
+		return rv, err
 	}
-
-	if err := b.raw("sendPhoto", params, &i); err != nil {
-		return nil, err
-	}
-	return i.Result, nil
+	err := b.raw("sendPhoto", params, &rv)
+	return rv, err
 }
 
 // EditMessageText https://core.telegram.org/bots/api#editmessagetext
 func (b *Bot) EditMessageText(params EditMessageTextParams) (*Message, error) {
-	var res struct {
-		Result *Message `json:"result"`
-	}
-
-	if err := b.raw("editMessageText", params, &res); err != nil {
-		return nil, err
-	}
-
-	return res.Result, nil
+	var rv *Message
+	err := b.raw("editMessageText", params, &rv)
+	return rv, err
 }
 
 // DeleteMessage https://core.telegram.org/bots/api#deletemessage
 func (b *Bot) DeleteMessage(params DeleteMessageParams) (bool, error) {
-	var i struct {
-		Result bool `json:"result"`
-	}
-	if err := b.raw("deleteMessage", params, &i); err != nil {
-		return false, err
-	}
-	return i.Result, nil
+	var rv bool
+	err := b.raw("deleteMessage", params, &rv)
+	return rv, err
 }
 
 func (b *Bot) raw(method string, out, in any) error {
@@ -204,25 +154,27 @@ func (b *Bot) raw(method string, out, in any) error {
 		return fmt.Errorf("failed to read body: %w", err)
 	}
 
-	if err = chkErr(data); err != nil {
-		return err
+	var r apiResponse
+	if err = json.Unmarshal(data, &r); err != nil {
+		return fmt.Errorf("failed to unmarshal response: %w", err)
 	}
 
-	return json.Unmarshal(data, in)
+	if !r.OK {
+		return fmt.Errorf("telegram error: %s", r.Description)
+	}
+
+	return json.Unmarshal(r.Result, in)
 }
 
-func chkErr(data []byte) error {
-	var e struct {
-		Ok          bool           `json:"ok"`
-		Code        int            `json:"error_code"`
-		Description string         `json:"description"`
-		Parameters  map[string]any `json:"parameters"`
-	}
-	if err := json.Unmarshal(data, &e); err != nil {
-		return fmt.Errorf("failed to parse error: %w", err)
-	}
-	if e.Ok {
-		return nil
-	}
-	return fmt.Errorf("telegram error: %s", e.Description)
+type apiResponse struct {
+	OK          bool               `json:"ok"`
+	Result      json.RawMessage    `json:"result,omitempty"`
+	Description string             `json:"description,omitempty"`
+	ErrorCode   int                `json:"error_code,omitempty"`
+	Parameters  *apiResponseParams `json:"parameters,omitempty"`
+}
+
+type apiResponseParams struct {
+	RetryAfter      int `json:"retry_after,omitempty"`
+	MigrateToChatID int `json:"migrate_to_chat_id,omitempty"`
 }

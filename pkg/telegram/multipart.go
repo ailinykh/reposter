@@ -42,7 +42,16 @@ func (b *Bot) rawMultipart(method string, in any, out any) error {
 		return fmt.Errorf("failed to read response body: %w", err)
 	}
 
-	return json.Unmarshal(data, &out)
+	var r apiResponse
+	if err = json.Unmarshal(data, &r); err != nil {
+		return fmt.Errorf("failed to unmarshal response: %w", err)
+	}
+
+	if !r.OK {
+		return fmt.Errorf("telegram error: %s", r.Description)
+	}
+
+	return json.Unmarshal(r.Result, &out)
 }
 
 func makeMultipart(m map[string]any, w *multipart.Writer) (err error) {
