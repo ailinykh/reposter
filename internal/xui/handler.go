@@ -34,10 +34,10 @@ type Handler struct {
 	state  *helpers.SafeMap[int64, string]
 }
 
-func (h *Handler) Handle(u *telegram.Update, bot *telegram.Bot) error {
+func (h *Handler) Handle(ctx context.Context, u *telegram.Update, bot *telegram.Bot) error {
 	// should answer
 	if u.CallbackQuery != nil && strings.HasPrefix(u.CallbackQuery.Data, "vpn_") {
-		return h.handleCallback(u.CallbackQuery, bot)
+		return h.handleCallback(ctx, u.CallbackQuery, bot)
 	}
 
 	// only for private chats
@@ -54,15 +54,15 @@ func (h *Handler) Handle(u *telegram.Update, bot *telegram.Bot) error {
 
 			switch state {
 			case "vpn_enter_new_key_name_expected":
-				return h.createKey(messageID, u.Message, bot)
+				return h.createKey(ctx, messageID, u.Message, bot)
 			case "vpn_enter_existing_key_name_expected":
-				return h.deleteKey(messageID, u.Message, bot)
+				return h.deleteKey(ctx, messageID, u.Message, bot)
 			}
 		}
 
 		h.l.Error("unexpected vpn state", "state", state)
 		h.state.Delete(u.Message.Chat.ID)
-		_, err := bot.SendMessage(&telegram.SendMessageParams{
+		_, err := bot.SendMessage(ctx, &telegram.SendMessageParams{
 			ChatID: u.Message.Chat.ID,
 			Text:   i18n("vpn_unexpected_state"),
 		})
@@ -73,12 +73,12 @@ func (h *Handler) Handle(u *telegram.Update, bot *telegram.Bot) error {
 	for _, command := range u.Message.Commands() {
 		switch command {
 		case "/start":
-			return h.handlePayload(u.Message, bot)
+			return h.handlePayload(ctx, u.Message, bot)
 		case "/vpnhelp":
 			if h.checkAccess(u.Message) {
-				return h.help(u.Message, bot)
+				return h.help(ctx, u.Message, bot)
 			}
-			_, err := bot.SendMessage(&telegram.SendMessageParams{
+			_, err := bot.SendMessage(ctx, &telegram.SendMessageParams{
 				ChatID: u.Message.Chat.ID,
 				Text:   i18n("vpn_mislead"),
 			})
@@ -109,14 +109,14 @@ func (h *Handler) checkAccess(m *telegram.Message) bool {
 	return settings.Enabled
 }
 
-func (h *Handler) help(m *telegram.Message, bot *telegram.Bot) error {
-	keys, err := h.client.GetKeys(m.Chat.ID)
+func (h *Handler) help(ctx context.Context, m *telegram.Message, bot *telegram.Bot) error {
+	keys, err := h.client.GetKeys(ctx, m.Chat.ID)
 	if err != nil {
 		return fmt.Errorf("failed to get keys: %w", err)
 	}
 
 	var isDisabled = true
-	_, err = bot.SendMessage(&telegram.SendMessageParams{
+	_, err = bot.SendMessage(ctx, &telegram.SendMessageParams{
 		ChatID:    m.Chat.ID,
 		Text:      i18n("vpn_welcome"),
 		ParseMode: telegram.ParseModeHTML,
@@ -130,7 +130,7 @@ func (h *Handler) help(m *telegram.Message, bot *telegram.Bot) error {
 	return err
 }
 
-func (h *Handler) handlePayload(m *telegram.Message, bot *telegram.Bot) error {
+func (h *Handler) handlePayload(ctx context.Context, m *telegram.Message, bot *telegram.Bot) error {
 	parts := strings.SplitN(m.Text, " ", 2)
 	if len(parts) < 2 {
 		return nil
@@ -151,27 +151,27 @@ func (h *Handler) handlePayload(m *telegram.Message, bot *telegram.Bot) error {
 		return fmt.Errorf("failed to save settings: %s", err)
 	}
 
-	return h.help(m, bot)
+	return h.help(ctx, m, bot)
 }
 
-func (h *Handler) createKey(messageID int64, m *telegram.Message, bot *telegram.Bot) error {
+func (h *Handler) createKey(ctx context.Context, messageID int64, m *telegram.Message, bot *telegram.Bot) error {
 	h.l.Info("create new key", "name", m.Text)
 	if len(m.Text) > 64 {
-		_, err := bot.SendMessage(&telegram.SendMessageParams{
+		_, err := bot.SendMessage(ctx, &telegram.SendMessageParams{
 			ChatID: m.Chat.ID,
 			Text:   i18n("vpn_enter_create_key_name_too_long"),
 		})
 		return err
 	}
 
-	key, err := h.client.CreateKey(m.Text, m.Chat.ID, m.From)
+	key, err := h.client.CreateKey(ctx, m.Text, m.Chat.ID, m.From)
 	if err != nil {
 		return fmt.Errorf("failed to create new key: %w", err)
 	}
 
 	h.state.Delete(m.Chat.ID)
 
-	if _, err := bot.DeleteMessage(&telegram.DeleteMessageParams{
+	if _, err := bot.DeleteMessage(ctx, &telegram.DeleteMessageParams{
 		ChatID:    m.Chat.ID,
 		MessageID: messageID,
 	}); err != nil {
@@ -181,7 +181,7 @@ func (h *Handler) createKey(messageID int64, m *telegram.Message, bot *telegram.
 	buttons := [][]telegram.InlineKeyboardButton{
 		{{Text: i18n("vpn_button_manage_key"), CallbackData: "vpn_manage_key"}},
 	}
-	_, err = bot.SendMessage(&telegram.SendMessageParams{
+	_, err = bot.SendMessage(ctx, &telegram.SendMessageParams{
 		ChatID:    m.Chat.ID,
 		Text:      i18n("vpn_key_created", key.Key),
 		ParseMode: telegram.ParseModeHTML,
@@ -192,16 +192,16 @@ func (h *Handler) createKey(messageID int64, m *telegram.Message, bot *telegram.
 	return err
 }
 
-func (h *Handler) deleteKey(messageID int64, m *telegram.Message, bot *telegram.Bot) error {
+func (h *Handler) deleteKey(ctx context.Context, messageID int64, m *telegram.Message, bot *telegram.Bot) error {
 	h.l.Info("delete key", "name", m.Text)
-	keys, err := h.client.GetKeys(m.Chat.ID)
+	keys, err := h.client.GetKeys(ctx, m.Chat.ID)
 	if err != nil {
 		return fmt.Errorf("failed to get keys: %w", err)
 	}
 
 	h.state.Delete(m.Chat.ID)
 
-	if _, err := bot.DeleteMessage(&telegram.DeleteMessageParams{
+	if _, err := bot.DeleteMessage(ctx, &telegram.DeleteMessageParams{
 		ChatID:    m.Chat.ID,
 		MessageID: messageID,
 	}); err != nil {
@@ -214,10 +214,10 @@ func (h *Handler) deleteKey(messageID int64, m *telegram.Message, bot *telegram.
 
 	for _, k := range keys {
 		if k.Title == m.Text {
-			if err = h.client.DeleteKey(k); err != nil {
+			if err = h.client.DeleteKey(ctx, k); err != nil {
 				return fmt.Errorf("failed to delete key: %w", err)
 			}
-			_, err = bot.SendMessage(&telegram.SendMessageParams{
+			_, err = bot.SendMessage(ctx, &telegram.SendMessageParams{
 				ChatID:    m.Chat.ID,
 				Text:      i18n("vpn_key_deleted", k.Title),
 				ParseMode: telegram.ParseModeHTML,
@@ -229,7 +229,7 @@ func (h *Handler) deleteKey(messageID int64, m *telegram.Message, bot *telegram.
 		}
 	}
 
-	_, err = bot.SendMessage(&telegram.SendMessageParams{
+	_, err = bot.SendMessage(ctx, &telegram.SendMessageParams{
 		ChatID: m.Chat.ID,
 		Text:   i18n("vpn_key_not_found"),
 		ReplyMarkup: telegram.InlineKeyboardMarkup{
@@ -239,12 +239,12 @@ func (h *Handler) deleteKey(messageID int64, m *telegram.Message, bot *telegram.
 	return err
 }
 
-func (h *Handler) handleCallback(c *telegram.CallbackQuery, bot *telegram.Bot) error {
+func (h *Handler) handleCallback(ctx context.Context, c *telegram.CallbackQuery, bot *telegram.Bot) error {
 	// It's always a real message in this case
 	m := c.MaybeInaccessibleMessage
 	h.l.Info("got callback", "id", c.ID, "data", c.Data, "message_id", m.ID, "chat_id", m.Chat.ID)
 
-	if err := bot.AnswerCallbackQuery(&telegram.AnswerCallbackQueryParams{CallbackQueryID: c.ID}); err != nil {
+	if err := bot.AnswerCallbackQuery(ctx, &telegram.AnswerCallbackQueryParams{CallbackQueryID: c.ID}); err != nil {
 		h.l.Error("failed to answer callback", "id", c.ID, "message_id", m.ID, "chat_id", m.Chat.ID)
 	}
 
@@ -255,7 +255,7 @@ func (h *Handler) handleCallback(c *telegram.CallbackQuery, bot *telegram.Bot) e
 		buttons := [][]telegram.InlineKeyboardButton{
 			{{Text: i18n("vpn_button_back"), CallbackData: "vpn_back"}},
 		}
-		_, err := bot.EditMessageText(&telegram.EditMessageTextParams{
+		_, err := bot.EditMessageText(ctx, &telegram.EditMessageTextParams{
 			ChatID:    m.Chat.ID,
 			MessageID: m.ID,
 			Text:      i18n("vpn_enter_create_key_name"),
@@ -267,7 +267,7 @@ func (h *Handler) handleCallback(c *telegram.CallbackQuery, bot *telegram.Bot) e
 		return err
 
 	case "vpn_delete_key":
-		keys, err := h.client.GetKeys(m.Chat.ID)
+		keys, err := h.client.GetKeys(ctx, m.Chat.ID)
 		if err != nil {
 			return fmt.Errorf("failed to get keys: %w", err)
 		}
@@ -282,7 +282,7 @@ func (h *Handler) handleCallback(c *telegram.CallbackQuery, bot *telegram.Bot) e
 		buttons := [][]telegram.InlineKeyboardButton{
 			{{Text: i18n("vpn_button_cancel"), CallbackData: "vpn_back"}},
 		}
-		_, err = bot.EditMessageText(&telegram.EditMessageTextParams{
+		_, err = bot.EditMessageText(ctx, &telegram.EditMessageTextParams{
 			ChatID:    m.Chat.ID,
 			MessageID: m.ID,
 			Text:      strings.Join(text, "\n"),
@@ -294,7 +294,7 @@ func (h *Handler) handleCallback(c *telegram.CallbackQuery, bot *telegram.Bot) e
 		return err
 
 	case "vpn_manage_key":
-		keys, err := h.client.GetKeys(m.Chat.ID)
+		keys, err := h.client.GetKeys(ctx, m.Chat.ID)
 		if err != nil {
 			return fmt.Errorf("failed to get keys: %w", err)
 		}
@@ -309,7 +309,7 @@ func (h *Handler) handleCallback(c *telegram.CallbackQuery, bot *telegram.Bot) e
 			{{Text: i18n("vpn_button_remove_key"), CallbackData: "vpn_delete_key"}},
 			{{Text: i18n("vpn_button_back"), CallbackData: "vpn_back"}},
 		}
-		_, err = bot.EditMessageText(&telegram.EditMessageTextParams{
+		_, err = bot.EditMessageText(ctx, &telegram.EditMessageTextParams{
 			ChatID:    m.Chat.ID,
 			MessageID: m.ID,
 			Text:      strings.Join(text, "\n"),
@@ -321,14 +321,14 @@ func (h *Handler) handleCallback(c *telegram.CallbackQuery, bot *telegram.Bot) e
 		return err
 
 	case "vpn_back":
-		keys, err := h.client.GetKeys(m.Chat.ID)
+		keys, err := h.client.GetKeys(ctx, m.Chat.ID)
 		if err != nil {
 			return fmt.Errorf("failed to get keys: %w", err)
 		}
 
 		h.state.Delete(m.Chat.ID)
 
-		_, err = bot.EditMessageText(&telegram.EditMessageTextParams{
+		_, err = bot.EditMessageText(ctx, &telegram.EditMessageTextParams{
 			ChatID:    m.Chat.ID,
 			MessageID: m.ID,
 			Text:      i18n("vpn_welcome"),

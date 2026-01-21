@@ -2,6 +2,7 @@ package telegram
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -12,7 +13,7 @@ import (
 	"strings"
 )
 
-func (b *Bot) rawMultipart(method string, in any, out any) error {
+func (b *Bot) rawMultipart(ctx context.Context, method string, in any, out any) error {
 	body := &bytes.Buffer{}
 	w := multipart.NewWriter(body)
 
@@ -25,7 +26,7 @@ func (b *Bot) rawMultipart(method string, in any, out any) error {
 	w.Close()
 
 	url := b.endpoint + "/bot" + b.token + "/" + method
-	req, err := http.NewRequest(http.MethodPost, url, body)
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, body)
 	if err != nil {
 		return fmt.Errorf("failed to create muiltipart request: %w", err)
 	}

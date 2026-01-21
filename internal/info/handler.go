@@ -1,6 +1,7 @@
 package info
 
 import (
+	"context"
 	"fmt"
 	"strings"
 
@@ -13,7 +14,7 @@ func New() *Info {
 
 type Info struct{}
 
-func (i *Info) Handle(u *telegram.Update, bot *telegram.Bot) error {
+func (i *Info) Handle(ctx context.Context, u *telegram.Update, bot *telegram.Bot) error {
 	m := u.Message
 	if m == nil || len(m.Commands()) == 0 || m.Commands()[0] != "/info" {
 		return nil
@@ -56,7 +57,7 @@ func (i *Info) Handle(u *telegram.Update, bot *telegram.Bot) error {
 		}
 	}
 
-	_, err := bot.SendMessage(&telegram.SendMessageParams{
+	_, err := bot.SendMessage(ctx, &telegram.SendMessageParams{
 		ChatID:    m.Chat.ID,
 		Text:      strings.Join(info, "\n"),
 		ParseMode: telegram.ParseModeHTML,

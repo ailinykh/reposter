@@ -16,7 +16,7 @@ import (
 	"github.com/ailinykh/reposter/v3/pkg/ytdlp"
 )
 
-func (h *Handler) handleSocial(urlString string, m *telegram.Message, bot *telegram.Bot) error {
+func (h *Handler) handleSocial(ctx context.Context, urlString string, m *telegram.Message, bot *telegram.Bot) error {
 	url, err := url.Parse(urlString)
 	if err != nil {
 		return fmt.Errorf("failed to parse url: %w", err)
@@ -55,7 +55,7 @@ func (h *Handler) handleSocial(urlString string, m *telegram.Message, bot *teleg
 	caption = strings.ToValidUTF8(caption, "")
 
 	key := fmt.Sprintf("%s.id.%s.bot.%s.videos", r.Extractor, r.ID, bot.Username)
-	if err := h.sendAsFileID(key, caption, m, bot); err != nil {
+	if err := h.sendAsFileID(ctx, key, caption, m, bot); err != nil {
 		h.l.Error("failed to send by file_id", "key", key, "error", err)
 	}
 
@@ -71,10 +71,10 @@ func (h *Handler) handleSocial(urlString string, m *telegram.Message, bot *teleg
 		}
 	}
 
-	return h.sendAsLocalFile(key, caption, r, m, bot)
+	return h.sendAsLocalFile(ctx, key, caption, r, m, bot)
 }
 
-func (h *Handler) sendAsFileID(key, caption string, m *telegram.Message, bot *telegram.Bot) error {
+func (h *Handler) sendAsFileID(ctx context.Context, key, caption string, m *telegram.Message, bot *telegram.Bot) error {
 	cache, err := h.cache.Get(context.Background(), key)
 	if err != nil {
 		return err
@@ -86,7 +86,7 @@ func (h *Handler) sendAsFileID(key, caption string, m *telegram.Message, bot *te
 	}
 
 	h.l.Info("got videos from cache", "key", key, "count", len(videos))
-	_, err = bot.SendVideo(&telegram.SendVideoParams{
+	_, err = bot.SendVideo(ctx, &telegram.SendVideoParams{
 		ChatID: m.Chat.ID,
 		Video: telegram.InputFileURL(
 			videos[0].FileID,
@@ -97,7 +97,7 @@ func (h *Handler) sendAsFileID(key, caption string, m *telegram.Message, bot *te
 	return err
 }
 
-func (h *Handler) sendAsLocalFile(key, caption string, r *ytdlp.Response, m *telegram.Message, bot *telegram.Bot) error {
+func (h *Handler) sendAsLocalFile(ctx context.Context, key, caption string, r *ytdlp.Response, m *telegram.Message, bot *telegram.Bot) error {
 	video, err := h.yd.DownloadFormat(r.FormatID, r)
 	if err != nil {
 		return fmt.Errorf("failed to download file: %w", err)
@@ -122,7 +122,7 @@ func (h *Handler) sendAsLocalFile(key, caption string, r *ytdlp.Response, m *tel
 		}
 	}
 
-	m, err = bot.SendVideo(&telegram.SendVideoParams{
+	m, err = bot.SendVideo(ctx, &telegram.SendVideoParams{
 		ChatID: m.Chat.ID,
 		Video: telegram.InputFileLocal{
 			Name:   video.Name,

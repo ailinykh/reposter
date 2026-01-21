@@ -1,6 +1,7 @@
 package hotlink
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"path"
@@ -9,7 +10,7 @@ import (
 	"github.com/ailinykh/reposter/v3/pkg/telegram"
 )
 
-func (h *Handler) handleHotlink(url string, m *telegram.Message, bot *telegram.Bot) error {
+func (h *Handler) handleHotlink(ctx context.Context, url string, m *telegram.Message, bot *telegram.Bot) error {
 	res, err := http.DefaultClient.Head(url)
 	if err != nil {
 		h.l.Error("failed to perform HEAD request", "url", url, "error", err)
@@ -25,7 +26,7 @@ func (h *Handler) handleHotlink(url string, m *telegram.Message, bot *telegram.B
 	h.l.Info("got contentType", "contentType", contentType)
 
 	if strings.HasPrefix(contentType, "video") {
-		_, err = bot.SendVideo(&telegram.SendVideoParams{
+		_, err = bot.SendVideo(ctx, &telegram.SendVideoParams{
 			ChatID:    m.Chat.ID,
 			Video:     telegram.InputFileURL(url),
 			Caption:   fmt.Sprintf(`<a href="%s">🔗</a> <b>%s</b> <i>(by %s)</i>`, url, path.Base(url), m.From.DisplayName()),
@@ -35,7 +36,7 @@ func (h *Handler) handleHotlink(url string, m *telegram.Message, bot *telegram.B
 	}
 
 	if strings.HasPrefix(contentType, "image") {
-		_, err = bot.SendPhoto(&telegram.SendPhotoParams{
+		_, err = bot.SendPhoto(ctx, &telegram.SendPhotoParams{
 			ChatID:    m.Chat.ID,
 			Photo:     telegram.InputFileURL(url),
 			Caption:   fmt.Sprintf(`<a href="%s">🖼</a> <b>%s</b> <i>(by %s)</i>`, url, path.Base(url), m.From.DisplayName()),

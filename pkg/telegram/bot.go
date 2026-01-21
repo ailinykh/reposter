@@ -10,10 +10,9 @@ import (
 	"net/http"
 )
 
-func NewBot(opts ...func(*Bot)) (*Bot, error) {
+func NewBot(ctx context.Context, opts ...func(*Bot)) (*Bot, error) {
 	b := &Bot{
 		client:   http.DefaultClient,
-		ctx:      context.Background(),
 		endpoint: "https://api.telegram.org",
 		l:        slog.Default(),
 	}
@@ -22,7 +21,7 @@ func NewBot(opts ...func(*Bot)) (*Bot, error) {
 		o(b)
 	}
 
-	me, err := b.GetMe()
+	me, err := b.GetMe(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -35,92 +34,90 @@ func NewBot(opts ...func(*Bot)) (*Bot, error) {
 type Bot struct {
 	*User
 	client   *http.Client
-	ctx      context.Context
 	endpoint string
 	token    string
 	l        *slog.Logger
 }
 
 // GetUpdates https://core.telegram.org/bots/api#getupdates
-func (b *Bot) GetUpdates(params *GetUpdatesParams) ([]*Update, error) {
+func (b *Bot) GetUpdates(ctx context.Context, params *GetUpdatesParams) ([]*Update, error) {
 	b.l.Debug("🗳️ start polling...", "offset", params.Offset, "timeout", params.Timeout)
 	var rv []*Update
-	err := b.raw("getUpdates", params, &rv)
+	err := b.raw(ctx, "getUpdates", params, &rv)
 	return rv, err
 }
 
 // GetMe https://core.telegram.org/bots/api#getme
-func (b *Bot) GetMe() (*User, error) {
+func (b *Bot) GetMe(ctx context.Context) (*User, error) {
 	var rv *User
-	err := b.raw("getMe", nil, &rv)
+	err := b.raw(ctx, "getMe", nil, &rv)
 	return rv, err
 }
 
 // SendMessage https://core.telegram.org/bots/api#sendmessage
-func (b *Bot) SendMessage(params *SendMessageParams) (*Message, error) {
+func (b *Bot) SendMessage(ctx context.Context, params *SendMessageParams) (*Message, error) {
 	var rv *Message
-	err := b.raw("sendMessage", params, &rv)
+	err := b.raw(ctx, "sendMessage", params, &rv)
 	return rv, err
 }
 
 // SendVideo https://core.telegram.org/bots/api#sendvideo
-func (b *Bot) SendVideo(params *SendVideoParams) (*Message, error) {
+func (b *Bot) SendVideo(ctx context.Context, params *SendVideoParams) (*Message, error) {
 	var rv *Message
 	if _, ok := params.Video.(InputFileLocal); ok {
-		err := b.rawMultipart("sendVideo", params, &rv)
+		err := b.rawMultipart(ctx, "sendVideo", params, &rv)
 		return rv, err
 	}
-	err := b.raw("sendVideo", params, &rv)
+	err := b.raw(ctx, "sendVideo", params, &rv)
 	return rv, err
 }
 
 // GetChatMember https://core.telegram.org/bots/api#getchatmember
-func (b *Bot) GetChatMember(params *GetChatMemberParams) (*ChatMember, error) {
+func (b *Bot) GetChatMember(ctx context.Context, params *GetChatMemberParams) (*ChatMember, error) {
 	var rv *ChatMember
-	err := b.raw("getChatMember", params, &rv)
+	err := b.raw(ctx, "getChatMember", params, &rv)
 	return rv, err
 }
 
-func (b *Bot) IsUserMemberOfChat(params *GetChatMemberParams) bool {
-	chatMember, err := b.GetChatMember(params)
+func (b *Bot) IsUserMemberOfChat(ctx context.Context, params *GetChatMemberParams) bool {
+	chatMember, err := b.GetChatMember(ctx, params)
 	if err != nil {
 		b.l.Error("failed to get ChatMember", "error", err)
 		return false
 	}
-
 	return chatMember != nil && chatMember.Status != "left" && chatMember.Status != "kicked"
 }
 
 // AnswerCallbackQuery https://core.telegram.org/bots/api#answercallbackquery
-func (b *Bot) AnswerCallbackQuery(params *AnswerCallbackQueryParams) error {
-	return b.raw("answerCallbackQuery", params, nil)
+func (b *Bot) AnswerCallbackQuery(ctx context.Context, params *AnswerCallbackQueryParams) error {
+	return b.raw(ctx, "answerCallbackQuery", params, nil)
 }
 
-func (b *Bot) SendPhoto(params *SendPhotoParams) (*Message, error) {
+func (b *Bot) SendPhoto(ctx context.Context, params *SendPhotoParams) (*Message, error) {
 	var rv *Message
 	if _, ok := params.Photo.(InputFileLocal); ok {
-		err := b.rawMultipart("sendPhoto", params, &rv)
+		err := b.rawMultipart(ctx, "sendPhoto", params, &rv)
 		return rv, err
 	}
-	err := b.raw("sendPhoto", params, &rv)
+	err := b.raw(ctx, "sendPhoto", params, &rv)
 	return rv, err
 }
 
 // EditMessageText https://core.telegram.org/bots/api#editmessagetext
-func (b *Bot) EditMessageText(params *EditMessageTextParams) (*Message, error) {
+func (b *Bot) EditMessageText(ctx context.Context, params *EditMessageTextParams) (*Message, error) {
 	var rv *Message
-	err := b.raw("editMessageText", params, &rv)
+	err := b.raw(ctx, "editMessageText", params, &rv)
 	return rv, err
 }
 
 // DeleteMessage https://core.telegram.org/bots/api#deletemessage
-func (b *Bot) DeleteMessage(params *DeleteMessageParams) (bool, error) {
+func (b *Bot) DeleteMessage(ctx context.Context, params *DeleteMessageParams) (bool, error) {
 	var rv bool
-	err := b.raw("deleteMessage", params, &rv)
+	err := b.raw(ctx, "deleteMessage", params, &rv)
 	return rv, err
 }
 
-func (b *Bot) raw(method string, out, in any) error {
+func (b *Bot) raw(ctx context.Context, method string, out, in any) error {
 	url := b.endpoint + "/bot" + b.token + "/" + method
 	var body io.Reader
 	if out != nil {
@@ -132,7 +129,7 @@ func (b *Bot) raw(method string, out, in any) error {
 		body = io.NopCloser(buf)
 	}
 
-	request, err := http.NewRequestWithContext(b.ctx, http.MethodPost, url, body)
+	request, err := http.NewRequestWithContext(ctx, http.MethodPost, url, body)
 	if err != nil {
 		return fmt.Errorf("failed to create request: %w", err)
 	}

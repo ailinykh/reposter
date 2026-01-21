@@ -18,9 +18,8 @@ import (
 
 const inboundId = 4
 
-func NewClient(ctx context.Context, l *slog.Logger, baseUrl, login, password string) *Client {
+func NewClient(l *slog.Logger, baseUrl, login, password string) *Client {
 	return &Client{
-		ctx:     ctx,
 		l:       l,
 		baseUrl: strings.TrimSuffix(baseUrl, "/"),
 		httpClient: &http.Client{
@@ -30,17 +29,16 @@ func NewClient(ctx context.Context, l *slog.Logger, baseUrl, login, password str
 }
 
 type Client struct {
-	ctx        context.Context
 	l          *slog.Logger
 	baseUrl    string
 	httpClient *http.Client
 }
 
-func (c *Client) GetKeys(chatId int64) ([]*VpnKey, error) {
+func (c *Client) GetKeys(ctx context.Context, chatId int64) ([]*VpnKey, error) {
 	urlString := fmt.Sprintf("%s/xui/API/inbounds/get/%d", c.baseUrl, inboundId)
 
 	var inboundResp InboundResponse
-	if err := c.do("GET", urlString, nil, &inboundResp); err != nil {
+	if err := c.do(ctx, "GET", urlString, nil, &inboundResp); err != nil {
 		return nil, fmt.Errorf("failed to parse inboundResponse: %w", err)
 	}
 
@@ -91,7 +89,7 @@ func (c *Client) GetKeys(chatId int64) ([]*VpnKey, error) {
 	return keys, nil
 }
 
-func (c *Client) CreateKey(keyName string, chatId int64, user *telegram.User) (*VpnKey, error) {
+func (c *Client) CreateKey(ctx context.Context, keyName string, chatId int64, user *telegram.User) (*VpnKey, error) {
 	settings := InboundSettings{
 		Clients: []InboundClient{{
 			ID:     uuid.NewString(),
@@ -113,7 +111,7 @@ func (c *Client) CreateKey(keyName string, chatId int64, user *telegram.User) (*
 	}
 	var res CreateClientResponse
 	urlString := c.baseUrl + "/xui/API/inbounds/addClient"
-	if err := c.do("POST", urlString, req, &res); err != nil {
+	if err := c.do(ctx, "POST", urlString, req, &res); err != nil {
 		return nil, fmt.Errorf("failed to add client: %w", err)
 	}
 
@@ -121,7 +119,7 @@ func (c *Client) CreateKey(keyName string, chatId int64, user *telegram.User) (*
 		return nil, fmt.Errorf("create client error: %s", res.Msg)
 	}
 
-	keys, err := c.GetKeys(chatId)
+	keys, err := c.GetKeys(ctx, chatId)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get keys: %s", res.Msg)
 	}
@@ -134,13 +132,13 @@ func (c *Client) CreateKey(keyName string, chatId int64, user *telegram.User) (*
 	return keys[len(keys)-1], nil
 }
 
-func (c *Client) DeleteKey(key *VpnKey) error {
+func (c *Client) DeleteKey(ctx context.Context, key *VpnKey) error {
 	urlString := fmt.Sprintf("%s/xui/API/inbounds/%d/delClient/%s", c.baseUrl, inboundId, key.ID)
 	var out struct{}
-	return c.do("POST", urlString, nil, &out)
+	return c.do(ctx, "POST", urlString, nil, &out)
 }
 
-func (c *Client) do(method, url string, in, out any) error {
+func (c *Client) do(ctx context.Context, method, url string, in, out any) error {
 	var body io.Reader
 	if in != nil {
 		buf := new(bytes.Buffer)
@@ -150,7 +148,7 @@ func (c *Client) do(method, url string, in, out any) error {
 		body = io.NopCloser(buf)
 	}
 
-	request, err := http.NewRequestWithContext(c.ctx, method, url, body)
+	request, err := http.NewRequestWithContext(ctx, method, url, body)
 	if err != nil {
 		return fmt.Errorf("failed to create request: %w", err)
 	}

@@ -15,7 +15,7 @@ import (
 )
 
 type UpdateHandler interface {
-	Handle(*telegram.Update, *telegram.Bot) error
+	Handle(context.Context, *telegram.Update, *telegram.Bot) error
 }
 
 func makeHandlers(
@@ -24,7 +24,7 @@ func makeHandlers(
 	repo *repository.Queries,
 ) []UpdateHandler {
 	handlers := []UpdateHandler{
-		fotd.NewGame(ctx, logger.With("handler", "fotd"), repo),
+		fotd.NewGame(logger.With("handler", "fotd"), repo),
 		info.New(),
 		hotlink.New(
 			logger.With("handler", "hotlink"),
@@ -41,7 +41,7 @@ func makeHandlers(
 	password := os.Getenv("XUI_PASSWORD")
 	if baseUrl != "" && login != "" && password != "" {
 		logger.Info("xui vpn logic enabled", "username", login)
-		client := xui.NewClient(ctx, logger.With("handler", "xui"), baseUrl, login, password)
+		client := xui.NewClient(logger.With("handler", "xui"), baseUrl, login, password)
 		handlers = append(handlers, xui.NewHandler(client, logger.With("handler", "xui"), repo))
 	} else {
 		logger.Info("xui vpn logic disabled")

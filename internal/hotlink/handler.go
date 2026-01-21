@@ -30,21 +30,21 @@ type Handler struct {
 	yd    *ytdlp.YtDlp
 }
 
-func (h *Handler) Handle(u *telegram.Update, bot *telegram.Bot) error {
+func (h *Handler) Handle(ctx context.Context, u *telegram.Update, bot *telegram.Bot) error {
 	// TODO: respect type="text_link" as well
 	if u.Message == nil || len(u.Message.URLs()) == 0 {
 		return nil
 	}
 
 	for _, urlString := range u.Message.URLs() {
-		if err := h.handleSocial(urlString, u.Message, bot); err != nil {
+		if err := h.handleSocial(ctx, urlString, u.Message, bot); err != nil {
 			if errors.Is(err, ErrURLNotSupported) {
-				return h.handleHotlink(urlString, u.Message, bot)
+				return h.handleHotlink(ctx, urlString, u.Message, bot)
 			}
 
 			var tooLong *VideoTooLongError
 			if errors.As(err, &tooLong) {
-				_, _ = bot.SendMessage(&telegram.SendMessageParams{
+				_, _ = bot.SendMessage(ctx, &telegram.SendMessageParams{
 					ChatID:    u.Message.Chat.ID,
 					Text:      fmt.Sprintf("%s\n<b>⏳ video too long: %d sec</b>", tooLong.Title, tooLong.Duration),
 					ParseMode: telegram.ParseModeHTML,
@@ -63,7 +63,7 @@ func (h *Handler) Handle(u *telegram.Update, bot *telegram.Bot) error {
 				return err
 			}
 			// Youtube related error occured, we can notify user
-			_, _ = bot.SendMessage(&telegram.SendMessageParams{
+			_, _ = bot.SendMessage(ctx, &telegram.SendMessageParams{
 				ChatID: u.Message.Chat.ID,
 				Text:   "😬 " + ytErr.Error(),
 				LinkPreviewOptions: &telegram.LinkPreviewOptions{

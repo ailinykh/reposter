@@ -10,10 +10,10 @@ import (
 
 func NewBot(ctx context.Context, logger *slog.Logger) *telegram.Bot {
 	bot, err := telegram.NewBot(
+		ctx,
 		telegram.WithToken(os.Getenv("TELEGRAM_BOT_TOKEN")),
 		telegram.WithLogger(logger),
 		telegram.WithClient(NewHttpClient(logger)),
-		telegram.WithContext(ctx),
 	)
 
 	if err != nil {

@@ -23,21 +23,19 @@ type GameRepository interface {
 	CreateRound(ctx context.Context, arg repository.CreateRoundParams) (repository.GameRound, error)
 }
 
-func NewGame(ctx context.Context, logger *slog.Logger, repo GameRepository) *Game {
+func NewGame(logger *slog.Logger, repo GameRepository) *Game {
 	return &Game{
-		ctx:  ctx,
 		l:    logger,
 		repo: repo,
 	}
 }
 
 type Game struct {
-	ctx  context.Context
 	l    *slog.Logger
 	repo GameRepository
 }
 
-func (g *Game) Handle(u *telegram.Update, bot *telegram.Bot) error {
+func (g *Game) Handle(ctx context.Context, u *telegram.Update, bot *telegram.Bot) error {
 	if u.Message == nil || len(u.Message.Commands()) == 0 {
 		return nil
 	}
@@ -55,7 +53,7 @@ func (g *Game) Handle(u *telegram.Update, bot *telegram.Bot) error {
 
 	if u.Message.Chat.Private() {
 		if u.Message.Chat.Type == "private" {
-			_, err := bot.SendMessage(&telegram.SendMessageParams{
+			_, err := bot.SendMessage(ctx, &telegram.SendMessageParams{
 				ChatID:    u.Message.Chat.ID,
 				Text:      i18n("faggot_not_available_for_private"),
 				ParseMode: telegram.ParseModeHTML,
@@ -68,29 +66,29 @@ func (g *Game) Handle(u *telegram.Update, bot *telegram.Bot) error {
 
 	switch command {
 	case "/pidorules":
-		return g.rules(u.Message, bot)
+		return g.rules(ctx, u.Message, bot)
 	case "/pidoreg":
-		return g.reg(u.Message, bot)
+		return g.reg(ctx, u.Message, bot)
 	case "/pidorstats":
-		return g.stats(strconv.Itoa(time.Now().Year()), u.Message, bot)
+		return g.stats(ctx, strconv.Itoa(time.Now().Year()), u.Message, bot)
 	case "/pidorall":
-		return g.all(u.Message, bot)
+		return g.all(ctx, u.Message, bot)
 	case "/pidorme":
-		return g.me(u.Message, bot)
+		return g.me(ctx, u.Message, bot)
 	default:
 
 		matches := regexp.MustCompile(`^/pidor(\d+)$`).FindAllStringSubmatch(u.Message.Text, -1)
 		if len(matches) > 0 && len(matches[0]) > 1 {
-			return g.stats(matches[0][1], u.Message, bot)
+			return g.stats(ctx, matches[0][1], u.Message, bot)
 		} else {
-			return g.play(u.Message, bot)
+			return g.play(ctx, u.Message, bot)
 		}
 	}
 }
 
-func (g *Game) rules(m *telegram.Message, bot *telegram.Bot) error {
+func (g *Game) rules(ctx context.Context, m *telegram.Message, bot *telegram.Bot) error {
 	g.l.Debug("game rules requested", "chat_id", m.Chat.ID, "user_id", m.From.ID)
-	_, err := bot.SendMessage(&telegram.SendMessageParams{
+	_, err := bot.SendMessage(ctx, &telegram.SendMessageParams{
 		ChatID:    m.Chat.ID,
 		Text:      i18n("faggot_rules"),
 		ParseMode: telegram.ParseModeHTML,
@@ -98,19 +96,19 @@ func (g *Game) rules(m *telegram.Message, bot *telegram.Bot) error {
 	return err
 }
 
-func (g *Game) reg(m *telegram.Message, bot *telegram.Bot) error {
+func (g *Game) reg(ctx context.Context, m *telegram.Message, bot *telegram.Bot) error {
 	g.l.Debug("game registration", "chat_id", m.Chat.ID, "user_id", m.From.ID)
-	players, _ := g.repo.GetPlayers(g.ctx, m.Chat.ID)
+	players, _ := g.repo.GetPlayers(ctx, m.Chat.ID)
 	for _, p := range players {
 		if p.UserID == m.From.ID {
 			if p.FirstName != m.From.FirstName || p.LastName != m.From.LastName || p.Username != m.From.Username {
-				_, err := g.repo.UpdatePlayer(g.ctx, repository.UpdatePlayerParams{
+				_, err := g.repo.UpdatePlayer(ctx, repository.UpdatePlayerParams{
 					UserID:    m.From.ID,
 					FirstName: m.From.FirstName,
 					LastName:  m.From.LastName,
 					Username:  m.From.Username,
 				})
-				_, err = bot.SendMessage(&telegram.SendMessageParams{
+				_, err = bot.SendMessage(ctx, &telegram.SendMessageParams{
 					ChatID:    m.Chat.ID,
 					Text:      i18n("faggot_info_updated"),
 					ParseMode: telegram.ParseModeHTML,
@@ -118,7 +116,7 @@ func (g *Game) reg(m *telegram.Message, bot *telegram.Bot) error {
 				return err
 			}
 
-			_, err := bot.SendMessage(&telegram.SendMessageParams{
+			_, err := bot.SendMessage(ctx, &telegram.SendMessageParams{
 				ChatID:    m.Chat.ID,
 				Text:      i18n("faggot_already_in_game"),
 				ParseMode: telegram.ParseModeHTML,
@@ -127,7 +125,7 @@ func (g *Game) reg(m *telegram.Message, bot *telegram.Bot) error {
 		}
 	}
 
-	_, err := g.repo.CreatePlayer(g.ctx, repository.CreatePlayerParams{
+	_, err := g.repo.CreatePlayer(ctx, repository.CreatePlayerParams{
 		ChatID:    m.Chat.ID,
 		UserID:    m.From.ID,
 		FirstName: m.From.FirstName,
@@ -138,7 +136,7 @@ func (g *Game) reg(m *telegram.Message, bot *telegram.Bot) error {
 		return err
 	}
 
-	_, err = bot.SendMessage(&telegram.SendMessageParams{
+	_, err = bot.SendMessage(ctx, &telegram.SendMessageParams{
 		ChatID:    m.Chat.ID,
 		Text:      i18n("faggot_added_to_game"),
 		ParseMode: telegram.ParseModeHTML,
@@ -146,10 +144,10 @@ func (g *Game) reg(m *telegram.Message, bot *telegram.Bot) error {
 	return err
 }
 
-func (g *Game) stats(year string, m *telegram.Message, bot *telegram.Bot) error {
+func (g *Game) stats(ctx context.Context, year string, m *telegram.Message, bot *telegram.Bot) error {
 	g.l.Debug("game statistics by year", "chat_id", m.Chat.ID, "user_id", m.From.ID)
 
-	rounds, err := g.repo.GetRounds(g.ctx, m.Chat.ID)
+	rounds, err := g.repo.GetRounds(ctx, m.Chat.ID)
 	if err != nil {
 		return err
 	}
@@ -159,7 +157,7 @@ func (g *Game) stats(year string, m *telegram.Message, bot *telegram.Bot) error 
 	})
 
 	if len(entries) == 0 {
-		_, err := bot.SendMessage(&telegram.SendMessageParams{
+		_, err := bot.SendMessage(ctx, &telegram.SendMessageParams{
 			ChatID:    m.Chat.ID,
 			Text:      i18n("faggot_stats_empty", year),
 			ParseMode: telegram.ParseModeHTML,
@@ -180,7 +178,7 @@ func (g *Game) stats(year string, m *telegram.Message, bot *telegram.Bot) error 
 		messages = append(messages, message)
 	}
 	messages = append(messages, "", i18n("faggot_stats_bottom", len(players)))
-	_, err = bot.SendMessage(&telegram.SendMessageParams{
+	_, err = bot.SendMessage(ctx, &telegram.SendMessageParams{
 		ChatID:    m.Chat.ID,
 		Text:      strings.Join(messages, "\n"),
 		ParseMode: telegram.ParseModeHTML,
@@ -188,10 +186,10 @@ func (g *Game) stats(year string, m *telegram.Message, bot *telegram.Bot) error 
 	return err
 }
 
-func (g *Game) all(m *telegram.Message, bot *telegram.Bot) error {
+func (g *Game) all(ctx context.Context, m *telegram.Message, bot *telegram.Bot) error {
 	g.l.Debug("game statistics", "chat_id", m.Chat.ID, "user_id", m.From.ID)
 
-	rounds, err := g.repo.GetRounds(g.ctx, m.Chat.ID)
+	rounds, err := g.repo.GetRounds(ctx, m.Chat.ID)
 	if err != nil {
 		return err
 	}
@@ -204,7 +202,7 @@ func (g *Game) all(m *telegram.Message, bot *telegram.Bot) error {
 		messages = append(messages, message)
 	}
 	messages = append(messages, "", i18n("faggot_all_bottom", len(players)))
-	_, err = bot.SendMessage(&telegram.SendMessageParams{
+	_, err = bot.SendMessage(ctx, &telegram.SendMessageParams{
 		ChatID:    m.Chat.ID,
 		Text:      strings.Join(messages, "\n"),
 		ParseMode: telegram.ParseModeHTML,
@@ -212,10 +210,10 @@ func (g *Game) all(m *telegram.Message, bot *telegram.Bot) error {
 	return err
 }
 
-func (g *Game) me(m *telegram.Message, bot *telegram.Bot) error {
+func (g *Game) me(ctx context.Context, m *telegram.Message, bot *telegram.Bot) error {
 	g.l.Debug("game statistics for person", "chat_id", m.Chat.ID, "user_id", m.From.ID)
 
-	rounds, err := g.repo.GetRounds(g.ctx, m.Chat.ID)
+	rounds, err := g.repo.GetRounds(ctx, m.Chat.ID)
 	if err != nil {
 		return err
 	}
@@ -224,7 +222,7 @@ func (g *Game) me(m *telegram.Message, bot *telegram.Bot) error {
 		return gr.UserID == m.From.ID
 	})
 
-	_, err = bot.SendMessage(&telegram.SendMessageParams{
+	_, err = bot.SendMessage(ctx, &telegram.SendMessageParams{
 		ChatID:    m.Chat.ID,
 		Text:      i18n("faggot_me", m.From.DisplayName(), entries[m.From.DisplayName()]),
 		ParseMode: telegram.ParseModeHTML,
@@ -234,24 +232,24 @@ func (g *Game) me(m *telegram.Message, bot *telegram.Bot) error {
 
 var mutex sync.Mutex
 
-func (g *Game) play(m *telegram.Message, bot *telegram.Bot) error {
+func (g *Game) play(ctx context.Context, m *telegram.Message, bot *telegram.Bot) error {
 	g.l.Info("game started", "chat_id", m.Chat.ID, "user_id", m.From.ID)
 	mutex.Lock()
 	defer mutex.Unlock()
 
 	// TODO: chat settigs and bot menu
 
-	players, _ := g.repo.GetPlayers(g.ctx, m.Chat.ID)
+	players, _ := g.repo.GetPlayers(ctx, m.Chat.ID)
 	switch len(players) {
 	case 0:
-		_, err := bot.SendMessage(&telegram.SendMessageParams{
+		_, err := bot.SendMessage(ctx, &telegram.SendMessageParams{
 			ChatID:    m.Chat.ID,
 			Text:      i18n("faggot_no_players", m.From.DisplayName()),
 			ParseMode: telegram.ParseModeHTML,
 		})
 		return err
 	case 1:
-		_, err := bot.SendMessage(&telegram.SendMessageParams{
+		_, err := bot.SendMessage(ctx, &telegram.SendMessageParams{
 			ChatID:    m.Chat.ID,
 			Text:      i18n("faggot_not_enough_players"),
 			ParseMode: telegram.ParseModeHTML,
@@ -259,13 +257,13 @@ func (g *Game) play(m *telegram.Message, bot *telegram.Bot) error {
 		return err
 	}
 
-	rounds, _ := g.repo.GetRounds(g.ctx, m.Chat.ID)
+	rounds, _ := g.repo.GetRounds(ctx, m.Chat.ID)
 	loc, _ := time.LoadLocation("Europe/Zurich")
 	today := time.Now().In(loc).Truncate(24 * time.Hour)
 	for _, r := range rounds {
 		if r.CreatedAt.Truncate(24 * time.Hour).Equal(today) {
 			// already have `displayName(champion)` in `Username` field
-			_, err := bot.SendMessage(&telegram.SendMessageParams{
+			_, err := bot.SendMessage(ctx, &telegram.SendMessageParams{
 				ChatID:    m.Chat.ID,
 				Text:      i18n("faggot_champion_known", r.Username),
 				ParseMode: telegram.ParseModeHTML,
@@ -276,8 +274,8 @@ func (g *Game) play(m *telegram.Message, bot *telegram.Bot) error {
 
 	champion := players[rand.IntN(len(players))]
 
-	if !bot.IsUserMemberOfChat(&telegram.GetChatMemberParams{ChatID: m.Chat.ID, UserID: champion.UserID}) {
-		_, err := bot.SendMessage(&telegram.SendMessageParams{
+	if !bot.IsUserMemberOfChat(ctx, &telegram.GetChatMemberParams{ChatID: m.Chat.ID, UserID: champion.UserID}) {
+		_, err := bot.SendMessage(ctx, &telegram.SendMessageParams{
 			ChatID:    m.Chat.ID,
 			Text:      i18n("faggot_champion_left"),
 			ParseMode: telegram.ParseModeHTML,
@@ -287,7 +285,7 @@ func (g *Game) play(m *telegram.Message, bot *telegram.Bot) error {
 
 	g.l.Info("champion calculated", "date", today, "username", displayName(champion))
 
-	g.repo.CreateRound(g.ctx, repository.CreateRoundParams{
+	g.repo.CreateRound(ctx, repository.CreateRoundParams{
 		ChatID:   m.Chat.ID,
 		UserID:   champion.UserID,
 		Username: displayName(champion),
@@ -307,7 +305,7 @@ func (g *Game) play(m *telegram.Message, bot *telegram.Bot) error {
 			phrase = i18n(template, mention(champion))
 		}
 
-		_, err := bot.SendMessage(&telegram.SendMessageParams{
+		_, err := bot.SendMessage(ctx, &telegram.SendMessageParams{
 			ChatID:    m.Chat.ID,
 			Text:      phrase,
 			ParseMode: telegram.ParseModeHTML,

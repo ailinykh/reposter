@@ -35,7 +35,7 @@ func startRunLoop(
 		case <-ctx.Done():
 			return
 		default:
-			updates, err := bot.GetUpdates(&telegram.GetUpdatesParams{Offset: offset, Timeout: 300})
+			updates, err := bot.GetUpdates(ctx, &telegram.GetUpdatesParams{Offset: offset, Timeout: 300})
 			if err != nil {
 				logger.Error("failed to get updates", "error", err)
 				break
@@ -44,7 +44,7 @@ func startRunLoop(
 			for _, update := range updates {
 				logger.Info("processing update", "update_id", update.ID, "message", update.Message)
 				for _, handler := range handlers {
-					if err := handler.Handle(update, bot); err != nil {
+					if err := handler.Handle(ctx, update, bot); err != nil {
 						logger.Error("❌ failed to process update", "handler", handler, "error", err)
 					}
 				}
