@@ -42,7 +42,7 @@ type Bot struct {
 }
 
 // GetUpdates https://core.telegram.org/bots/api#getupdates
-func (b *Bot) GetUpdates(params GetUpdatesParams) ([]*Update, error) {
+func (b *Bot) GetUpdates(params *GetUpdatesParams) ([]*Update, error) {
 	b.l.Debug("🗳️ start polling...", "offset", params.Offset, "timeout", params.Timeout)
 	var rv []*Update
 	err := b.raw("getUpdates", params, &rv)
@@ -57,14 +57,14 @@ func (b *Bot) GetMe() (*User, error) {
 }
 
 // SendMessage https://core.telegram.org/bots/api#sendmessage
-func (b *Bot) SendMessage(params SendMessageParams) (*Message, error) {
+func (b *Bot) SendMessage(params *SendMessageParams) (*Message, error) {
 	var rv *Message
 	err := b.raw("sendMessage", params, &rv)
 	return rv, err
 }
 
 // SendVideo https://core.telegram.org/bots/api#sendvideo
-func (b *Bot) SendVideo(params SendVideoParams) (*Message, error) {
+func (b *Bot) SendVideo(params *SendVideoParams) (*Message, error) {
 	var rv *Message
 	if _, ok := params.Video.(InputFileLocal); ok {
 		err := b.rawMultipart("sendVideo", params, &rv)
@@ -75,13 +75,13 @@ func (b *Bot) SendVideo(params SendVideoParams) (*Message, error) {
 }
 
 // GetChatMember https://core.telegram.org/bots/api#getchatmember
-func (b *Bot) GetChatMember(params GetChatMemberParams) (*ChatMember, error) {
+func (b *Bot) GetChatMember(params *GetChatMemberParams) (*ChatMember, error) {
 	var rv *ChatMember
 	err := b.raw("getChatMember", params, &rv)
 	return rv, err
 }
 
-func (b *Bot) IsUserMemberOfChat(params GetChatMemberParams) bool {
+func (b *Bot) IsUserMemberOfChat(params *GetChatMemberParams) bool {
 	chatMember, err := b.GetChatMember(params)
 	if err != nil {
 		b.l.Error("failed to get ChatMember", "error", err)
@@ -92,11 +92,11 @@ func (b *Bot) IsUserMemberOfChat(params GetChatMemberParams) bool {
 }
 
 // AnswerCallbackQuery https://core.telegram.org/bots/api#answercallbackquery
-func (b *Bot) AnswerCallbackQuery(params AnswerCallbackQueryParams) error {
+func (b *Bot) AnswerCallbackQuery(params *AnswerCallbackQueryParams) error {
 	return b.raw("answerCallbackQuery", params, nil)
 }
 
-func (b *Bot) SendPhoto(params SendPhotoParams) (*Message, error) {
+func (b *Bot) SendPhoto(params *SendPhotoParams) (*Message, error) {
 	var rv *Message
 	if _, ok := params.Photo.(InputFileLocal); ok {
 		err := b.rawMultipart("sendPhoto", params, &rv)
@@ -107,14 +107,14 @@ func (b *Bot) SendPhoto(params SendPhotoParams) (*Message, error) {
 }
 
 // EditMessageText https://core.telegram.org/bots/api#editmessagetext
-func (b *Bot) EditMessageText(params EditMessageTextParams) (*Message, error) {
+func (b *Bot) EditMessageText(params *EditMessageTextParams) (*Message, error) {
 	var rv *Message
 	err := b.raw("editMessageText", params, &rv)
 	return rv, err
 }
 
 // DeleteMessage https://core.telegram.org/bots/api#deletemessage
-func (b *Bot) DeleteMessage(params DeleteMessageParams) (bool, error) {
+func (b *Bot) DeleteMessage(params *DeleteMessageParams) (bool, error) {
 	var rv bool
 	err := b.raw("deleteMessage", params, &rv)
 	return rv, err

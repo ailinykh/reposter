@@ -95,7 +95,7 @@ func makeMultipart(m map[string]any, w *multipart.Writer) (err error) {
 }
 
 func fill(m map[string]any, in any) {
-	v := reflect.ValueOf(in)
+	v := reflect.ValueOf(in).Elem()
 	t := v.Type()
 
 	for i := 0; i < t.NumField(); i++ {

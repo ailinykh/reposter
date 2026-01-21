@@ -44,7 +44,7 @@ func (h *Handler) Handle(u *telegram.Update, bot *telegram.Bot) error {
 
 			var tooLong *VideoTooLongError
 			if errors.As(err, &tooLong) {
-				_, _ = bot.SendMessage(telegram.SendMessageParams{
+				_, _ = bot.SendMessage(&telegram.SendMessageParams{
 					ChatID:    u.Message.Chat.ID,
 					Text:      fmt.Sprintf("%s\n<b>⏳ video too long: %d sec</b>", tooLong.Title, tooLong.Duration),
 					ParseMode: telegram.ParseModeHTML,
@@ -63,7 +63,7 @@ func (h *Handler) Handle(u *telegram.Update, bot *telegram.Bot) error {
 				return err
 			}
 			// Youtube related error occured, we can notify user
-			_, _ = bot.SendMessage(telegram.SendMessageParams{
+			_, _ = bot.SendMessage(&telegram.SendMessageParams{
 				ChatID: u.Message.Chat.ID,
 				Text:   "😬 " + ytErr.Error(),
 				LinkPreviewOptions: &telegram.LinkPreviewOptions{

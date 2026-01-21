@@ -86,7 +86,7 @@ func (h *Handler) sendAsFileID(key, caption string, m *telegram.Message, bot *te
 	}
 
 	h.l.Info("got videos from cache", "key", key, "count", len(videos))
-	_, err = bot.SendVideo(telegram.SendVideoParams{
+	_, err = bot.SendVideo(&telegram.SendVideoParams{
 		ChatID: m.Chat.ID,
 		Video: telegram.InputFileURL(
 			videos[0].FileID,
@@ -122,7 +122,7 @@ func (h *Handler) sendAsLocalFile(key, caption string, r *ytdlp.Response, m *tel
 		}
 	}
 
-	m, err = bot.SendVideo(telegram.SendVideoParams{
+	m, err = bot.SendVideo(&telegram.SendVideoParams{
 		ChatID: m.Chat.ID,
 		Video: telegram.InputFileLocal{
 			Name:   video.Name,

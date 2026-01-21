@@ -56,7 +56,7 @@ func (i *Info) Handle(u *telegram.Update, bot *telegram.Bot) error {
 		}
 	}
 
-	_, err := bot.SendMessage(telegram.SendMessageParams{
+	_, err := bot.SendMessage(&telegram.SendMessageParams{
 		ChatID:    m.Chat.ID,
 		Text:      strings.Join(info, "\n"),
 		ParseMode: telegram.ParseModeHTML,
