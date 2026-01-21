@@ -92,12 +92,8 @@ func (b *Bot) IsUserMemberOfChat(params GetChatMemberParams) bool {
 }
 
 // AnswerCallbackQuery https://core.telegram.org/bots/api#answercallbackquery
-func (b *Bot) AnswerCallbackQuery(queryID, text string) error {
-	o := map[string]any{
-		"callback_query_id": queryID,
-		"text":              text,
-	}
-	return b.raw("answerCallbackQuery", o, nil)
+func (b *Bot) AnswerCallbackQuery(params AnswerCallbackQueryParams) error {
+	return b.raw("answerCallbackQuery", params, nil)
 }
 
 func (b *Bot) SendPhoto(params SendPhotoParams) (*Message, error) {

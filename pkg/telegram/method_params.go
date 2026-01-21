@@ -45,6 +45,14 @@ type GetChatMemberParams struct {
 	UserID int64 `json:"user_id"`
 }
 
+// AnswerCallbackQueryParams https://core.telegram.org/bots/api#answercallbackquery
+type AnswerCallbackQueryParams struct {
+	CallbackQueryID string `json:"callback_query_id"`
+	Text            string `json:"text,omitempty"`
+	ShowAlert       bool   `json:"show_alert,omitempty"`
+	URL             string `json:"url,omitempty"`
+}
+
 // EditMessageTextParams https://core.telegram.org/bots/api#editmessagetext
 type EditMessageTextParams struct {
 	ChatID             int64               `json:"chat_id"`

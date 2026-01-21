@@ -244,7 +244,7 @@ func (h *Handler) handleCallback(c *telegram.CallbackQuery, bot *telegram.Bot) e
 	m := c.MaybeInaccessibleMessage
 	h.l.Info("got callback", "id", c.ID, "data", c.Data, "message_id", m.ID, "chat_id", m.Chat.ID)
 
-	if err := bot.AnswerCallbackQuery(c.ID, ""); err != nil {
+	if err := bot.AnswerCallbackQuery(telegram.AnswerCallbackQueryParams{CallbackQueryID: c.ID}); err != nil {
 		h.l.Error("failed to answer callback", "id", c.ID, "message_id", m.ID, "chat_id", m.Chat.ID)
 	}
 
