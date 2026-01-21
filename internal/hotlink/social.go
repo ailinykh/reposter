@@ -1,12 +1,16 @@
 package hotlink
 
 import (
+	"context"
+	"encoding/json"
 	"fmt"
 	"net/url"
 	"os"
 	"slices"
 	"strings"
+	"time"
 
+	"github.com/ailinykh/reposter/v3/internal/repository"
 	"github.com/ailinykh/reposter/v3/pkg/ffmpeg"
 	"github.com/ailinykh/reposter/v3/pkg/telegram"
 	"github.com/ailinykh/reposter/v3/pkg/ytdlp"
@@ -44,23 +48,56 @@ func (h *Handler) handleSocial(urlString string, m *telegram.Message, bot *teleg
 		return fmt.Errorf("live stream is not supported yet")
 	}
 
+	caption := fmt.Sprintf("<a href=\"%s\">🎞</a> <b>%s</b> <i>(by %s)</i>\n\n%s", r.OriginalUrl, r.Title, m.From.DisplayName(), r.Description)
+	if len(caption) > 1024 {
+		caption = caption[:1024]
+	}
+	caption = strings.ToValidUTF8(caption, "")
+
+	key := fmt.Sprintf("%s.id.%s.bot.%s.videos", r.Extractor, r.ID, bot.Username)
+	if err := h.sendAsFileID(key, caption, m, bot); err != nil {
+		h.l.Error("failed to send by file_id", "key", key, "error", err)
+	}
+
 	const maxSize int64 = 50_000_000 // Telegram multipart/form-data limit
 	if r.Filesize > maxSize {
 		h.l.Warn("video too long", "id", r.ID, "extractor", r.Extractor, "size", r.Filesize, "duration", r.Duration)
 		if !m.Chat.Private() {
 			return nil // be silent in group chat
 		}
-		_, err = bot.SendMessage(telegram.SendMessageParams{
-			ChatID:    m.Chat.ID,
-			Text:      fmt.Sprintf("%s\n<b>⏳ video too long: %d sec</b>", r.Title, r.Duration),
-			ParseMode: telegram.ParseModeHTML,
-			ReplyParameters: &telegram.ReplyParameters{
-				Quote: urlString,
-			},
-		})
+		return &VideoTooLongError{
+			Duration: time.Duration(r.Duration),
+			Title:    r.Title,
+		}
+	}
+
+	return h.sendAsLocalFile(key, caption, r, m, bot)
+}
+
+func (h *Handler) sendAsFileID(key, caption string, m *telegram.Message, bot *telegram.Bot) error {
+	cache, err := h.cache.Get(context.Background(), key)
+	if err != nil {
 		return err
 	}
 
+	var videos []*telegram.Video
+	if err = json.Unmarshal(cache.Value, &videos); err != nil {
+		return err
+	}
+
+	h.l.Info("got videos from cache", "key", key, "count", len(videos))
+	_, err = bot.SendVideo(telegram.SendVideoParams{
+		ChatID: m.Chat.ID,
+		Video: telegram.InputFileURL(
+			videos[0].FileID,
+		),
+		Caption:   caption,
+		ParseMode: telegram.ParseModeHTML,
+	})
+	return err
+}
+
+func (h *Handler) sendAsLocalFile(key, caption string, r *ytdlp.Response, m *telegram.Message, bot *telegram.Bot) error {
 	video, err := h.yd.DownloadFormat(r.FormatID, r)
 	if err != nil {
 		return fmt.Errorf("failed to download file: %w", err)
@@ -85,13 +122,7 @@ func (h *Handler) handleSocial(urlString string, m *telegram.Message, bot *teleg
 		}
 	}
 
-	caption := fmt.Sprintf("<a href=\"%s\">🎞</a> <b>%s</b> <i>(by %s)</i>\n\n%s", r.OriginalUrl, r.Title, m.From.DisplayName(), r.Description)
-	if len(caption) > 1024 {
-		caption = caption[:1024]
-	}
-	caption = strings.ToValidUTF8(caption, "")
-
-	_, err = bot.SendVideo(telegram.SendVideoParams{
+	m, err = bot.SendVideo(telegram.SendVideoParams{
 		ChatID: m.Chat.ID,
 		Video: telegram.InputFileLocal{
 			Name:   video.Name,
@@ -104,6 +135,26 @@ func (h *Handler) handleSocial(urlString string, m *telegram.Message, bot *teleg
 		Caption:           caption,
 		ParseMode:         telegram.ParseModeHTML,
 		SupportsStreaming: true,
+	})
+	if err != nil {
+		return fmt.Errorf("failed to send video: %w", err)
+	}
+
+	h.l.Info("video sent successfully", "extractor", r.Extractor, "size", r.Filesize, "duration", r.Duration)
+
+	if m.Video == nil {
+		return fmt.Errorf("no video in outgoing message found")
+	}
+
+	videos := []*telegram.Video{m.Video}
+	data, err := json.Marshal(videos)
+	if err != nil {
+		return fmt.Errorf("failed to encode videos: %w", err)
+	}
+
+	_, err = h.cache.Set(context.Background(), repository.SetParams{
+		Key:   key,
+		Value: data,
 	})
 	return err
 }

@@ -28,6 +28,7 @@ func makeHandlers(
 		info.New(),
 		hotlink.New(
 			logger.With("handler", "hotlink"),
+			repo,
 			ytdlp.New(
 				ytdlp.WithArgs(getYtDlpArgs()),
 				ytdlp.WithLogger(logger.With("tool", "yt-dlp")),
