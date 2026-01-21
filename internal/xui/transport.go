@@ -56,8 +56,7 @@ func (at *AuthTransport) Authorize(req *http.Request) error {
 		"password": at.password,
 	}
 
-	err := helpers.CreateMultipart(params, writer)
-	if err != nil {
+	if err := helpers.CreateMultipart(params, writer); err != nil {
 		return fmt.Errorf("failed to create muiltipart/form data: %w", err)
 	}
 	writer.Close()
@@ -68,9 +67,14 @@ func (at *AuthTransport) Authorize(req *http.Request) error {
 	}
 	loginUrl := fmt.Sprintf("%s/login", req.URL.String()[:apiIndex])
 
-	r, _ := http.NewRequest("POST", loginUrl, body)
-	r.Header.Add("Content-Type", writer.FormDataContentType())
-	res, err := http.DefaultClient.Do(r)
+	req, err := http.NewRequestWithContext(req.Context(), "POST", loginUrl, body)
+	if err != nil {
+		return err
+	}
+
+	req.Header.Add("Content-Type", writer.FormDataContentType())
+
+	res, err := at.T.RoundTrip(req)
 	if err != nil {
 		return err
 	}
