@@ -26,6 +26,7 @@ func (h *Handler) handleSocial(ctx context.Context, urlString string, m *telegra
 
 	supportedHostnames := []string{
 		"instagram.com",
+		"www.instagram.com",
 		"tiktok.com",
 		"twitter.com",
 		"www.youtube.com",
@@ -54,7 +55,7 @@ func (h *Handler) handleSocial(ctx context.Context, urlString string, m *telegra
 	}
 	caption = strings.ToValidUTF8(caption, "")
 
-	key := fmt.Sprintf("%s.id.%s.bot.%s.videos", r.Extractor, r.ID, bot.Username)
+	key := fmt.Sprintf("%s.id.%s.bot.%s.videos", strings.ToLower(r.Extractor), r.ID, bot.Username)
 	if err := h.sendAsFileID(ctx, key, caption, m, bot); err != nil {
 		h.l.Error("failed to send by file_id", "key", key, "error", err)
 	}
@@ -128,7 +129,7 @@ func (h *Handler) sendAsLocalFile(ctx context.Context, key, caption string, r *y
 			Name:   video.Name,
 			Reader: video.File,
 		},
-		Duration:          r.Duration,
+		Duration:          int(r.Duration),
 		Width:             r.Width,
 		Height:            r.Height,
 		Thumbnail:         t,

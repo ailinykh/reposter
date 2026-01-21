@@ -22,7 +22,7 @@ type Response struct {
 	ID          string    `json:"id"`
 	Title       string    `json:"title"`
 	Description string    `json:"description"`
-	Duration    int       `json:"duration"`
+	Duration    float64   `json:"duration"`
 	Extractor   string    `json:"extractor"`
 	Filesize    int64     `json:"filesize_approx"`
 	Formats     []*Format `json:"formats"`
