@@ -325,6 +325,9 @@ func (h *Handler) handleCallback(c *telegram.CallbackQuery, bot *telegram.Bot) e
 		if err != nil {
 			return fmt.Errorf("failed to get keys: %w", err)
 		}
+
+		h.state.Delete(m.Chat.ID)
+
 		_, err = bot.EditMessageText(telegram.EditMessageTextParams{
 			ChatID:    m.Chat.ID,
 			MessageID: m.ID,
