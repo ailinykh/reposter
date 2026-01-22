@@ -39,44 +39,45 @@ func (h *Handler) Handle(ctx context.Context, u *telegram.Update, bot *telegram.
 		return nil
 	}
 
+	canNotifyUser := func(err error) error {
+		var tooLong *VideoTooLongError
+		if errors.As(err, &tooLong) {
+			return fmt.Errorf("%s\n<b>⏳ video too long: %d sec</b>", tooLong.Title, tooLong.Duration)
+		}
+
+		var xErr *xcom.Error
+		if errors.As(err, &xErr) {
+			return fmt.Errorf("😬 %s", xErr.Error())
+		}
+
+		var ytErr *ytdlp.Error
+		if errors.As(err, &ytErr) {
+			return fmt.Errorf("😬 %s", ytErr.Error())
+		}
+
+		return nil
+	}
+
 	for _, urlString := range u.Message.URLs() {
 		if err := h.handleSocial(ctx, urlString, u.Message, bot); err != nil {
 			if errors.Is(err, ErrURLNotSupported) {
 				return h.handleHotlink(ctx, urlString, u.Message, bot)
 			}
 
-			var tooLong *VideoTooLongError
-			if errors.As(err, &tooLong) {
+			if e := canNotifyUser(err); e != nil {
 				_, _ = bot.SendMessage(ctx, &telegram.SendMessageParams{
 					ChatID:    u.Message.Chat.ID,
-					Text:      fmt.Sprintf("%s\n<b>⏳ video too long: %d sec</b>", tooLong.Title, tooLong.Duration),
+					Text:      e.Error(),
 					ParseMode: telegram.ParseModeHTML,
 					ReplyParameters: &telegram.ReplyParameters{
 						MessageID: u.Message.ID,
 						Quote:     urlString,
 					},
 				})
-				continue
-			}
-
-			h.l.Error("failed to process url", "error", err, "url", urlString)
-
-			var ytErr *ytdlp.Error
-			if !errors.As(err, &ytErr) {
+			} else {
+				h.l.Error("failed to process url", "error", err, "url", urlString)
 				return err
 			}
-			// Youtube related error occured, we can notify user
-			_, _ = bot.SendMessage(ctx, &telegram.SendMessageParams{
-				ChatID: u.Message.Chat.ID,
-				Text:   "😬 " + ytErr.Error(),
-				LinkPreviewOptions: &telegram.LinkPreviewOptions{
-					IsDisabled: true,
-				},
-				ReplyParameters: &telegram.ReplyParameters{
-					MessageID: u.Message.ID,
-					Quote:     urlString,
-				},
-			})
 		}
 	}
 
