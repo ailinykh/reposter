@@ -182,3 +182,37 @@ type InputFileLocal struct {
 }
 
 func (InputFileLocal) isInputFile() {}
+
+// InputMedia https://core.telegram.org/bots/api#inputmedia
+type InputMedia interface {
+	isInputMedia() // marker interface
+}
+
+// InputMediaPhoto https://core.telegram.org/bots/api#inputmediaphoto
+type InputMediaPhoto struct {
+	Type                  string    `json:"type"`
+	Media                 string    `json:"media"`
+	Caption               string    `json:"caption,omitempty"`
+	ParseMode             ParseMode `json:"parse_mode,omitempty"`
+	ShowCaptionAboveMedia bool      `json:"show_caption_above_media,omitempty"`
+	HasSpoiler            bool      `json:"has_spoiler,omitempty"`
+}
+
+func (InputMediaPhoto) isInputMedia() {}
+
+// InputMediaVideo https://core.telegram.org/bots/api#inputmediavideo
+type InputMediaVideo struct {
+	Type                  string    `json:"type"`
+	Media                 string    `json:"media"`
+	Thumbnail             string    `json:"thumbnail"`
+	Caption               string    `json:"caption,omitempty"`
+	ParseMode             ParseMode `json:"parse_mode,omitempty"`
+	ShowCaptionAboveMedia bool      `json:"show_caption_above_media,omitempty"`
+	Width                 int       `json:"width,omitempty"`
+	Height                int       `json:"height,omitempty"`
+	Duration              int       `json:"duration,omitempty"`
+	SupportsStreaming     bool      `json:"supports_streaming,omitempty"`
+	HasSpoiler            bool      `json:"has_spoiler,omitempty"`
+}
+
+func (InputMediaVideo) isInputMedia() {}

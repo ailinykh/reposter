@@ -83,6 +83,13 @@ func (b *Bot) SendVideo(ctx context.Context, params *SendVideoParams) (*Message,
 	return rv, err
 }
 
+// SendMediaGroup https://core.telegram.org/bots/api#sendmediagroup
+func (b *Bot) SendMediaGroup(ctx context.Context, params *SendMediaGroupParams) ([]*Message, error) {
+	var rv []*Message
+	err := b.raw(ctx, "sendMediaGroup", params, &rv)
+	return rv, err
+}
+
 // GetChatMember https://core.telegram.org/bots/api#getchatmember
 func (b *Bot) GetChatMember(ctx context.Context, params *GetChatMemberParams) (*ChatMember, error) {
 	var rv *ChatMember

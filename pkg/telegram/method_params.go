@@ -39,6 +39,13 @@ type SendVideoParams struct {
 	SupportsStreaming bool      `json:"supports_streaming,omitempty"`
 }
 
+// SendMediaGroupParams https://core.telegram.org/bots/api#sendmediagroup
+type SendMediaGroupParams struct {
+	ChatID          int64            `json:"chat_id"`
+	Media           []InputMedia     `json:"media"`
+	ReplyParameters *ReplyParameters `json:"reply_parameters,omitempty"`
+}
+
 // GetChatMemberParams https://core.telegram.org/bots/api#getchatmember
 type GetChatMemberParams struct {
 	ChatID int64 `json:"chat_id"`
