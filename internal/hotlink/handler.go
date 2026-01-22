@@ -8,6 +8,7 @@ import (
 
 	"github.com/ailinykh/reposter/v3/internal/repository"
 	"github.com/ailinykh/reposter/v3/pkg/telegram"
+	"github.com/ailinykh/reposter/v3/pkg/xcom"
 	"github.com/ailinykh/reposter/v3/pkg/ytdlp"
 )
 
@@ -16,10 +17,11 @@ type Repo interface {
 	Get(ctx context.Context, key string) (repository.Cache, error)
 }
 
-func New(l *slog.Logger, cache Repo, yd *ytdlp.YtDlp) *Handler {
+func New(l *slog.Logger, cache Repo, x *xcom.XComAPI, yd *ytdlp.YtDlp) *Handler {
 	return &Handler{
 		l:     l,
 		cache: cache,
+		x:     x,
 		yd:    yd,
 	}
 }
@@ -27,6 +29,7 @@ func New(l *slog.Logger, cache Repo, yd *ytdlp.YtDlp) *Handler {
 type Handler struct {
 	l     *slog.Logger
 	cache Repo
+	x     *xcom.XComAPI
 	yd    *ytdlp.YtDlp
 }
 

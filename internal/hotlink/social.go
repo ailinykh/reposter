@@ -24,15 +24,21 @@ func (h *Handler) handleSocial(ctx context.Context, urlString string, m *telegra
 
 	h.l.Info("processing url", "hostname", url.Hostname(), "url", urlString)
 
+	xHostnames := []string{
+		"twitter.com",
+		"x.com",
+	}
+	if slices.Contains(xHostnames, url.Hostname()) {
+		return h.handleXcom(ctx, urlString, m, bot)
+	}
+
 	supportedHostnames := []string{
 		"instagram.com",
 		"www.instagram.com",
 		"tiktok.com",
-		"twitter.com",
 		"www.youtube.com",
 		"youtube.com",
 		"youtu.be",
-		"x.com",
 	}
 
 	if !slices.Contains(supportedHostnames, url.Hostname()) {

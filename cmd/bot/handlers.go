@@ -11,6 +11,7 @@ import (
 	"github.com/ailinykh/reposter/v3/internal/repository"
 	"github.com/ailinykh/reposter/v3/internal/xui"
 	"github.com/ailinykh/reposter/v3/pkg/telegram"
+	"github.com/ailinykh/reposter/v3/pkg/xcom"
 	"github.com/ailinykh/reposter/v3/pkg/ytdlp"
 )
 
@@ -28,6 +29,7 @@ func makeHandlers(
 		hotlink.New(
 			logger.With("handler", "hotlink"),
 			repo,
+			xcom.New(logger),
 			ytdlp.New(
 				ytdlp.WithArgs(getYtDlpArgs()),
 				ytdlp.WithLogger(logger.With("tool", "yt-dlp")),
