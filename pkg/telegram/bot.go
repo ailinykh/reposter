@@ -61,6 +61,17 @@ func (b *Bot) SendMessage(ctx context.Context, params *SendMessageParams) (*Mess
 	return rv, err
 }
 
+// SendPhoto https://core.telegram.org/bots/api#sendphoto
+func (b *Bot) SendPhoto(ctx context.Context, params *SendPhotoParams) (*Message, error) {
+	var rv *Message
+	if _, ok := params.Photo.(InputFileLocal); ok {
+		err := b.rawMultipart(ctx, "sendPhoto", params, &rv)
+		return rv, err
+	}
+	err := b.raw(ctx, "sendPhoto", params, &rv)
+	return rv, err
+}
+
 // SendVideo https://core.telegram.org/bots/api#sendvideo
 func (b *Bot) SendVideo(ctx context.Context, params *SendVideoParams) (*Message, error) {
 	var rv *Message
@@ -91,16 +102,6 @@ func (b *Bot) IsUserMemberOfChat(ctx context.Context, params *GetChatMemberParam
 // AnswerCallbackQuery https://core.telegram.org/bots/api#answercallbackquery
 func (b *Bot) AnswerCallbackQuery(ctx context.Context, params *AnswerCallbackQueryParams) error {
 	return b.raw(ctx, "answerCallbackQuery", params, nil)
-}
-
-func (b *Bot) SendPhoto(ctx context.Context, params *SendPhotoParams) (*Message, error) {
-	var rv *Message
-	if _, ok := params.Photo.(InputFileLocal); ok {
-		err := b.rawMultipart(ctx, "sendPhoto", params, &rv)
-		return rv, err
-	}
-	err := b.raw(ctx, "sendPhoto", params, &rv)
-	return rv, err
 }
 
 // EditMessageText https://core.telegram.org/bots/api#editmessagetext
