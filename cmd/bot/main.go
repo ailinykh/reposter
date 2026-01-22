@@ -19,7 +19,7 @@ func main() {
 	bot := NewBot(ctx, logger)
 	repo := repository.New(NewDB(logger))
 
-	startRunLoop(ctx, logger, bot, makeHandlers(ctx, logger, repo))
+	startRunLoop(ctx, logger, bot, makeHandlers(logger, repo))
 	logger.Info("attempt to shutdown gracefully...")
 }
 

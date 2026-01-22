@@ -19,7 +19,6 @@ type UpdateHandler interface {
 }
 
 func makeHandlers(
-	ctx context.Context,
 	logger *slog.Logger,
 	repo *repository.Queries,
 ) []UpdateHandler {
