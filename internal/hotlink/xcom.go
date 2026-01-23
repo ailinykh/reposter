@@ -42,26 +42,26 @@ func (h *Handler) handleXcom(ctx context.Context, urlString string, m *telegram.
 		switch m.Type {
 		case "photo":
 			photo := &telegram.InputMediaPhoto{
-				Type:      "photo",
-				Media:     m.MediaUrlHttps,
-				ParseMode: telegram.ParseModeHTML,
+				Type:                  "photo",
+				Media:                 m.MediaUrlHttps,
+				ParseMode:             telegram.ParseModeHTML,
+				ShowCaptionAboveMedia: true,
 			}
 			if i == len(tweet.Legacy.Entities.Media)-1 {
 				photo.Caption = caption
-				photo.ShowCaptionAboveMedia = true
 			}
 			params.Media = append(params.Media, photo)
 		case "video", "animated_gif":
 			video := &telegram.InputMediaVideo{
-				Type:      "video",
-				Media:     m.VideoInfo.Best().URL,
-				Duration:  int(m.VideoInfo.Duration / 1000),
-				Thumbnail: m.MediaUrlHttps,
-				ParseMode: telegram.ParseModeHTML,
+				Type:                  "video",
+				Media:                 m.VideoInfo.Best().URL,
+				Duration:              int(m.VideoInfo.Duration / 1000),
+				Thumbnail:             m.MediaUrlHttps,
+				ParseMode:             telegram.ParseModeHTML,
+				ShowCaptionAboveMedia: true,
 			}
 			if i == len(tweet.Legacy.Entities.Media)-1 {
 				video.Caption = caption
-				video.ShowCaptionAboveMedia = true
 			}
 			params.Media = append(params.Media, video)
 		default:
