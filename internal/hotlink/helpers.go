@@ -2,7 +2,7 @@ package hotlink
 
 import "github.com/ailinykh/reposter/v3/pkg/telegram"
 
-func VideosToMedia(videos []*telegram.Video, caption string) []telegram.InputMedia {
+func MediaFromVideos(videos []*telegram.Video, caption string) []telegram.InputMedia {
 	medias := []telegram.InputMedia{}
 	for i, v := range videos {
 		video := telegram.InputMediaVideo{

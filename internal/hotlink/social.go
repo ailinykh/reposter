@@ -117,7 +117,7 @@ func (h *Handler) sendAsFileID(ctx context.Context, key, caption string, m *tele
 	default:
 		_, err := bot.SendMediaGroup(ctx, &telegram.SendMediaGroupParams{
 			ChatID: m.Chat.ID,
-			Media:  VideosToMedia(videos, caption),
+			Media:  MediaFromVideos(videos, caption),
 		})
 		return err
 	}
