@@ -61,7 +61,7 @@ func (h *Handler) handleSocial(ctx context.Context, urlString string, m *telegra
 	}
 	caption = strings.ToValidUTF8(caption, "")
 
-	key := fmt.Sprintf("%s.id.%s.bot.%s.videos", strings.ToLower(r.Extractor), r.ID, bot.Username)
+	key := fmt.Sprintf("%s.id.%s.bot.%s.messages", strings.ToLower(r.Extractor), r.ID, bot.Username)
 	if err := h.sendAsFileID(ctx, key, caption, m, bot); err != nil {
 		h.l.Error("failed to send by file_id", "key", key, "error", err)
 	}
@@ -87,21 +87,40 @@ func (h *Handler) sendAsFileID(ctx context.Context, key, caption string, m *tele
 		return err
 	}
 
-	var videos []*telegram.Video
-	if err = json.Unmarshal(cache.Value, &videos); err != nil {
+	var messages []*telegram.Message
+	if err = json.Unmarshal(cache.Value, &messages); err != nil {
 		return err
 	}
 
-	h.l.Info("got videos from cache", "key", key, "count", len(videos))
-	_, err = bot.SendVideo(ctx, &telegram.SendVideoParams{
-		ChatID: m.Chat.ID,
-		Video: telegram.InputFileURL(
-			videos[0].FileID,
-		),
-		Caption:   caption,
-		ParseMode: telegram.ParseModeHTML,
-	})
-	return err
+	h.l.Info("got messages from cache", "key", key, "count", len(messages))
+
+	var videos = []*telegram.Video{}
+	for _, m := range messages {
+		if m.Video != nil {
+			videos = append(videos, m.Video)
+		}
+	}
+
+	switch len(videos) {
+	case 0:
+		return fmt.Errorf("no videos found in cached messages")
+	case 1:
+		_, err = bot.SendVideo(ctx, &telegram.SendVideoParams{
+			ChatID: m.Chat.ID,
+			Video: telegram.InputFileURL(
+				videos[0].FileID,
+			),
+			Caption:   caption,
+			ParseMode: telegram.ParseModeHTML,
+		})
+		return err
+	default:
+		_, err := bot.SendMediaGroup(ctx, &telegram.SendMediaGroupParams{
+			ChatID: m.Chat.ID,
+			Media:  VideosToMedia(videos, caption),
+		})
+		return err
+	}
 }
 
 func (h *Handler) sendAsLocalFile(ctx context.Context, key, caption string, r *ytdlp.Response, m *telegram.Message, bot *telegram.Bot) error {
@@ -153,8 +172,8 @@ func (h *Handler) sendAsLocalFile(ctx context.Context, key, caption string, r *y
 		return fmt.Errorf("no video in outgoing message found")
 	}
 
-	videos := []*telegram.Video{m.Video}
-	data, err := json.Marshal(videos)
+	messages := []*telegram.Message{m}
+	data, err := json.Marshal(messages)
 	if err != nil {
 		return fmt.Errorf("failed to encode videos: %w", err)
 	}
