@@ -94,12 +94,7 @@ func (h *Handler) sendAsFileID(ctx context.Context, key, caption string, m *tele
 
 	h.l.Info("got messages from cache", "key", key, "count", len(messages))
 
-	var videos = []*telegram.Video{}
-	for _, m := range messages {
-		if m.Video != nil {
-			videos = append(videos, m.Video)
-		}
-	}
+	videos := VideoFromMessages(messages)
 
 	switch len(videos) {
 	case 0:
