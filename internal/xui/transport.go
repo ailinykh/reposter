@@ -61,9 +61,9 @@ func (at *AuthTransport) Authorize(req *http.Request) error {
 	}
 	writer.Close()
 
-	apiIndex := strings.Index(req.URL.String(), "/xui/API")
+	apiIndex := strings.Index(req.URL.String(), "/panel/api")
 	if apiIndex == -1 {
-		return fmt.Errorf("failed to find /xui/API in url: %s", req.URL.String())
+		return fmt.Errorf("failed to find /panel/api in url: %s", req.URL.String())
 	}
 	loginUrl := fmt.Sprintf("%s/login", req.URL.String()[:apiIndex])
 
@@ -78,13 +78,14 @@ func (at *AuthTransport) Authorize(req *http.Request) error {
 	if err != nil {
 		return err
 	}
-	defer res.Body.Close()
 
 	for _, cookie := range res.Cookies() {
-		if cookie.Name == "x-ui" {
+		fmt.Println(cookie)
+		if cookie.Name == "3x-ui" {
 			at.cookie = cookie
 			return nil
 		}
 	}
-	return fmt.Errorf("x-ui cookie not found")
+
+	return fmt.Errorf("3x-ui cookie not found")
 }

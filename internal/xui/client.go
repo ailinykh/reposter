@@ -16,7 +16,7 @@ import (
 	"github.com/google/uuid"
 )
 
-const inboundId = 4
+const inboundId = 3
 
 func NewClient(l *slog.Logger, baseUrl, login, password string) *Client {
 	return &Client{
@@ -35,7 +35,7 @@ type Client struct {
 }
 
 func (c *Client) GetKeys(ctx context.Context, chatId int64) ([]*VpnKey, error) {
-	urlString := fmt.Sprintf("%s/xui/API/inbounds/get/%d", c.baseUrl, inboundId)
+	urlString := fmt.Sprintf("%s/panel/api/inbounds/get/%d", c.baseUrl, inboundId)
 
 	var inboundResp InboundResponse
 	if err := c.do(ctx, "GET", urlString, nil, &inboundResp); err != nil {
@@ -62,7 +62,7 @@ func (c *Client) GetKeys(ctx context.Context, chatId int64) ([]*VpnKey, error) {
 		parts := strings.SplitN(client.Email, "|", 3)
 		if len(parts) == 3 && strconv.FormatInt(chatId, 10) == parts[0] {
 			key := fmt.Sprintf(
-				"%s://%s@%s:%d?type=%s&security=%s&pbk=%s&fp=%s&sni=%s&sid=&spx=%s#%s",
+				"%s://%s@%s:%d?type=%s&security=%s&pbk=%s&fp=%s&sni=%s&sid=%s&spx=%s#%s",
 				inboundResp.Obj.Protocol,
 				client.ID,
 				baseUrl.Hostname(),
@@ -72,6 +72,7 @@ func (c *Client) GetKeys(ctx context.Context, chatId int64) ([]*VpnKey, error) {
 				inboundStreamSettings.RealitySettings.Settings.PublikKey,
 				inboundStreamSettings.RealitySettings.Settings.Fingerprint,
 				inboundStreamSettings.RealitySettings.ServerNames[0],
+				inboundStreamSettings.RealitySettings.ShortIDS[0],
 				inboundStreamSettings.RealitySettings.Settings.SpiderX,
 				// https://go.dev/play/p/pOfrn-Wsq5
 				(&url.URL{Path: parts[2]}).String(),
@@ -92,11 +93,11 @@ func (c *Client) GetKeys(ctx context.Context, chatId int64) ([]*VpnKey, error) {
 func (c *Client) CreateKey(ctx context.Context, keyName string, chatId int64, user *telegram.User) (*VpnKey, error) {
 	settings := InboundSettings{
 		Clients: []InboundClient{{
-			ID:     uuid.NewString(),
-			Flow:   "",
-			Email:  fmt.Sprintf("%d|%s|%s", chatId, user.DisplayName(), keyName),
-			Enable: true,
-			TgId:   user.Username,
+			ID:      uuid.NewString(),
+			Flow:    "",
+			Email:   fmt.Sprintf("%d|%s|%s", chatId, user.Username, keyName),
+			Enable:  true,
+			Comment: user.DisplayName(),
 		}},
 	}
 
@@ -110,7 +111,7 @@ func (c *Client) CreateKey(ctx context.Context, keyName string, chatId int64, us
 		Settings: string(settingsData),
 	}
 	var res CreateClientResponse
-	urlString := c.baseUrl + "/xui/API/inbounds/addClient"
+	urlString := c.baseUrl + "/panel/api/inbounds/addClient"
 	if err := c.do(ctx, "POST", urlString, req, &res); err != nil {
 		return nil, fmt.Errorf("failed to add client: %w", err)
 	}
@@ -133,7 +134,7 @@ func (c *Client) CreateKey(ctx context.Context, keyName string, chatId int64, us
 }
 
 func (c *Client) DeleteKey(ctx context.Context, key *VpnKey) error {
-	urlString := fmt.Sprintf("%s/xui/API/inbounds/%d/delClient/%s", c.baseUrl, inboundId, key.ID)
+	urlString := fmt.Sprintf("%s/panel/api/inbounds/%d/delClient/%s", c.baseUrl, inboundId, key.ID)
 	var out struct{}
 	return c.do(ctx, "POST", urlString, nil, &out)
 }
