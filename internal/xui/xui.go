@@ -7,9 +7,9 @@ import (
 	"log/slog"
 	"strconv"
 	"strings"
+	"sync"
 
 	"github.com/ailinykh/reposter/v3/internal/repository"
-	"github.com/ailinykh/reposter/v3/pkg/helpers"
 	"github.com/ailinykh/reposter/v3/pkg/telegram"
 )
 
@@ -24,7 +24,7 @@ func New(client *Client, inboundID int, l *slog.Logger, repo SettingsRepository)
 		inboundID: inboundID,
 		l:         l,
 		repo:      repo,
-		state:     helpers.NewSafeMap[int64, string](),
+		state:     sync.Map{},
 	}
 }
 
@@ -33,7 +33,7 @@ type Xui struct {
 	inboundID int
 	l         *slog.Logger
 	repo      SettingsRepository
-	state     *helpers.SafeMap[int64, string]
+	state     sync.Map
 }
 
 func (x *Xui) Handle(ctx context.Context, u *telegram.Update, bot *telegram.Bot) error {
@@ -48,27 +48,29 @@ func (x *Xui) Handle(ctx context.Context, u *telegram.Update, bot *telegram.Bot)
 	}
 
 	// check if key name expected
-	if state, ok := x.state.Get(u.Message.Chat.ID); ok {
-		// consider to use another delimeter maybe
-		parts := strings.Split(state, "_")
-		if messageID, err := strconv.ParseInt(parts[len(parts)-1], 10, 64); err == nil {
-			state = strings.Join(parts[:len(parts)-1], "_")
+	if state, ok := x.state.Load(u.Message.Chat.ID); ok {
+		if state, ok := state.(string); ok {
+			// consider to use another delimeter maybe
+			parts := strings.Split(state, "_")
+			if messageID, err := strconv.ParseInt(parts[len(parts)-1], 10, 64); err == nil {
+				state = strings.Join(parts[:len(parts)-1], "_")
 
-			switch state {
-			case "vpn_enter_new_key_name_expected":
-				return x.createKey(ctx, messageID, u.Message, bot)
-			case "vpn_enter_existing_key_name_expected":
-				return x.deleteKey(ctx, messageID, u.Message, bot)
+				switch state {
+				case "vpn_enter_new_key_name_expected":
+					return x.createKey(ctx, messageID, u.Message, bot)
+				case "vpn_enter_existing_key_name_expected":
+					return x.deleteKey(ctx, messageID, u.Message, bot)
+				}
 			}
-		}
 
-		x.l.Error("unexpected vpn state", "state", state)
-		x.state.Delete(u.Message.Chat.ID)
-		_, err := bot.SendMessage(ctx, &telegram.SendMessageParams{
-			ChatID: u.Message.Chat.ID,
-			Text:   i18n("vpn_unexpected_state"),
-		})
-		return err
+			x.l.Error("unexpected vpn state", "state", state)
+			x.state.Delete(u.Message.Chat.ID)
+			_, err := bot.SendMessage(ctx, &telegram.SendMessageParams{
+				ChatID: u.Message.Chat.ID,
+				Text:   i18n("vpn_unexpected_state"),
+			})
+			return err
+		}
 	}
 
 	// check commands
@@ -252,7 +254,7 @@ func (x *Xui) handleCallback(ctx context.Context, c *telegram.CallbackQuery, bot
 
 	switch c.Data {
 	case "vpn_create_key":
-		x.state.Set(m.Chat.ID, fmt.Sprintf("vpn_enter_new_key_name_expected_%d", m.ID))
+		x.state.Store(m.Chat.ID, fmt.Sprintf("vpn_enter_new_key_name_expected_%d", m.ID))
 
 		buttons := [][]telegram.InlineKeyboardButton{
 			{{Text: i18n("vpn_button_back"), CallbackData: "vpn_back"}},
@@ -274,7 +276,7 @@ func (x *Xui) handleCallback(ctx context.Context, c *telegram.CallbackQuery, bot
 			return fmt.Errorf("failed to get keys: %w", err)
 		}
 
-		x.state.Set(m.Chat.ID, fmt.Sprintf("vpn_enter_existing_key_name_expected_%d", m.ID))
+		x.state.Store(m.Chat.ID, fmt.Sprintf("vpn_enter_existing_key_name_expected_%d", m.ID))
 
 		text := []string{i18n("vpn_enter_delete_key_name_top")}
 		for _, key := range keys {
