@@ -16,8 +16,6 @@ import (
 	"github.com/google/uuid"
 )
 
-const inboundId = 3
-
 func NewClient(l *slog.Logger, baseUrl, login, password string) *Client {
 	return &Client{
 		l:       l,
@@ -34,7 +32,25 @@ type Client struct {
 	httpClient *http.Client
 }
 
-func (c *Client) GetKeys(ctx context.Context, chatId int64) ([]*VpnKey, error) {
+func (c *Client) GetInbounds(ctx context.Context) ([]Inbound, error) {
+	urlString := fmt.Sprintf("%s/panel/api/inbounds/list", c.baseUrl)
+	var inboundList struct {
+		Success bool      `json:"success"`
+		Msg     string    `json:"msg"`
+		Obj     []Inbound `json:"obj"`
+	}
+	if err := c.do(ctx, "GET", urlString, nil, &inboundList); err != nil {
+		return nil, fmt.Errorf("failed to parse inbound list: %w", err)
+	}
+
+	if !inboundList.Success {
+		return nil, fmt.Errorf("failed to get inbound list: %s", inboundList.Msg)
+	}
+
+	return inboundList.Obj, nil
+}
+
+func (c *Client) GetKeys(ctx context.Context, inboundId int, chatId int64) ([]*VpnKey, error) {
 	urlString := fmt.Sprintf("%s/panel/api/inbounds/get/%d", c.baseUrl, inboundId)
 
 	var inboundResp InboundResponse
@@ -90,7 +106,7 @@ func (c *Client) GetKeys(ctx context.Context, chatId int64) ([]*VpnKey, error) {
 	return keys, nil
 }
 
-func (c *Client) CreateKey(ctx context.Context, keyName string, chatId int64, user *telegram.User) (*VpnKey, error) {
+func (c *Client) CreateKey(ctx context.Context, inboundID int, keyName string, chatId int64, user *telegram.User) (*VpnKey, error) {
 	settings := InboundSettings{
 		Clients: []InboundClient{{
 			ID:      uuid.NewString(),
@@ -107,7 +123,7 @@ func (c *Client) CreateKey(ctx context.Context, keyName string, chatId int64, us
 	}
 
 	req := CreateClientRequest{
-		ID:       inboundId,
+		ID:       inboundID,
 		Settings: string(settingsData),
 	}
 	var res CreateClientResponse
@@ -120,7 +136,7 @@ func (c *Client) CreateKey(ctx context.Context, keyName string, chatId int64, us
 		return nil, fmt.Errorf("create client error: %s", res.Msg)
 	}
 
-	keys, err := c.GetKeys(ctx, chatId)
+	keys, err := c.GetKeys(ctx, inboundID, chatId)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get keys: %s", res.Msg)
 	}
@@ -133,8 +149,8 @@ func (c *Client) CreateKey(ctx context.Context, keyName string, chatId int64, us
 	return keys[len(keys)-1], nil
 }
 
-func (c *Client) DeleteKey(ctx context.Context, key *VpnKey) error {
-	urlString := fmt.Sprintf("%s/panel/api/inbounds/%d/delClient/%s", c.baseUrl, inboundId, key.ID)
+func (c *Client) DeleteKey(ctx context.Context, inboundID int, key *VpnKey) error {
+	urlString := fmt.Sprintf("%s/panel/api/inbounds/%d/delClient/%s", c.baseUrl, inboundID, key.ID)
 	var out struct{}
 	return c.do(ctx, "POST", urlString, nil, &out)
 }

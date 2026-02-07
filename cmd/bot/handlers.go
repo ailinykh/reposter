@@ -4,6 +4,7 @@ import (
 	"context"
 	"log/slog"
 	"os"
+	"strconv"
 
 	"github.com/ailinykh/reposter/v3/internal/fotd"
 	"github.com/ailinykh/reposter/v3/internal/hotlink"
@@ -40,10 +41,11 @@ func makeHandlers(
 	baseUrl := os.Getenv("XUI_BASE_URL")
 	login := os.Getenv("XUI_LOGIN")
 	password := os.Getenv("XUI_PASSWORD")
-	if baseUrl != "" && login != "" && password != "" {
+	inboundID, err := strconv.Atoi(os.Getenv("XUI_INBOUND_ID"))
+	if baseUrl != "" && login != "" && password != "" && err == nil {
 		logger.Info("xui vpn logic enabled", "username", login)
 		client := xui.NewClient(logger.With("handler", "xui"), baseUrl, login, password)
-		handlers = append(handlers, xui.NewHandler(client, logger.With("handler", "xui"), repo))
+		handlers = append(handlers, xui.NewHandler(client, inboundID, logger.With("handler", "xui"), repo))
 	} else {
 		logger.Info("xui vpn logic disabled")
 	}

@@ -18,20 +18,22 @@ type SettingsRepository interface {
 	SetSettings(ctx context.Context, arg repository.SetSettingsParams) (repository.ChatSetting, error)
 }
 
-func NewHandler(client *Client, l *slog.Logger, repo SettingsRepository) *Handler {
+func NewHandler(client *Client, inboundID int, l *slog.Logger, repo SettingsRepository) *Handler {
 	return &Handler{
-		client: client,
-		l:      l,
-		repo:   repo,
-		state:  helpers.NewSafeMap[int64, string](),
+		client:    client,
+		inboundID: inboundID,
+		l:         l,
+		repo:      repo,
+		state:     helpers.NewSafeMap[int64, string](),
 	}
 }
 
 type Handler struct {
-	client *Client
-	l      *slog.Logger
-	repo   SettingsRepository
-	state  *helpers.SafeMap[int64, string]
+	client    *Client
+	inboundID int
+	l         *slog.Logger
+	repo      SettingsRepository
+	state     *helpers.SafeMap[int64, string]
 }
 
 func (h *Handler) Handle(ctx context.Context, u *telegram.Update, bot *telegram.Bot) error {
@@ -110,7 +112,7 @@ func (h *Handler) checkAccess(m *telegram.Message) bool {
 }
 
 func (h *Handler) help(ctx context.Context, m *telegram.Message, bot *telegram.Bot) error {
-	keys, err := h.client.GetKeys(ctx, m.Chat.ID)
+	keys, err := h.client.GetKeys(ctx, h.inboundID, m.Chat.ID)
 	if err != nil {
 		return fmt.Errorf("failed to get keys: %w", err)
 	}
@@ -164,7 +166,7 @@ func (h *Handler) createKey(ctx context.Context, messageID int64, m *telegram.Me
 		return err
 	}
 
-	key, err := h.client.CreateKey(ctx, m.Text, m.Chat.ID, m.From)
+	key, err := h.client.CreateKey(ctx, h.inboundID, m.Text, m.Chat.ID, m.From)
 	if err != nil {
 		return fmt.Errorf("failed to create new key: %w", err)
 	}
@@ -194,7 +196,7 @@ func (h *Handler) createKey(ctx context.Context, messageID int64, m *telegram.Me
 
 func (h *Handler) deleteKey(ctx context.Context, messageID int64, m *telegram.Message, bot *telegram.Bot) error {
 	h.l.Info("delete key", "name", m.Text)
-	keys, err := h.client.GetKeys(ctx, m.Chat.ID)
+	keys, err := h.client.GetKeys(ctx, h.inboundID, m.Chat.ID)
 	if err != nil {
 		return fmt.Errorf("failed to get keys: %w", err)
 	}
@@ -214,7 +216,7 @@ func (h *Handler) deleteKey(ctx context.Context, messageID int64, m *telegram.Me
 
 	for _, k := range keys {
 		if k.Title == m.Text {
-			if err = h.client.DeleteKey(ctx, k); err != nil {
+			if err = h.client.DeleteKey(ctx, h.inboundID, k); err != nil {
 				return fmt.Errorf("failed to delete key: %w", err)
 			}
 			_, err = bot.SendMessage(ctx, &telegram.SendMessageParams{
@@ -267,7 +269,7 @@ func (h *Handler) handleCallback(ctx context.Context, c *telegram.CallbackQuery,
 		return err
 
 	case "vpn_delete_key":
-		keys, err := h.client.GetKeys(ctx, m.Chat.ID)
+		keys, err := h.client.GetKeys(ctx, h.inboundID, m.Chat.ID)
 		if err != nil {
 			return fmt.Errorf("failed to get keys: %w", err)
 		}
@@ -294,7 +296,7 @@ func (h *Handler) handleCallback(ctx context.Context, c *telegram.CallbackQuery,
 		return err
 
 	case "vpn_manage_key":
-		keys, err := h.client.GetKeys(ctx, m.Chat.ID)
+		keys, err := h.client.GetKeys(ctx, h.inboundID, m.Chat.ID)
 		if err != nil {
 			return fmt.Errorf("failed to get keys: %w", err)
 		}
@@ -321,7 +323,7 @@ func (h *Handler) handleCallback(ctx context.Context, c *telegram.CallbackQuery,
 		return err
 
 	case "vpn_back":
-		keys, err := h.client.GetKeys(ctx, m.Chat.ID)
+		keys, err := h.client.GetKeys(ctx, h.inboundID, m.Chat.ID)
 		if err != nil {
 			return fmt.Errorf("failed to get keys: %w", err)
 		}
