@@ -45,7 +45,7 @@ func makeHandlers(
 	if baseUrl != "" && login != "" && password != "" && err == nil {
 		logger.Info("xui vpn logic enabled", "username", login)
 		client := xui.NewClient(logger.With("handler", "xui"), baseUrl, login, password)
-		handlers = append(handlers, xui.NewHandler(client, inboundID, logger.With("handler", "xui"), repo))
+		handlers = append(handlers, xui.New(client, inboundID, logger.With("handler", "xui"), repo))
 	} else {
 		logger.Info("xui vpn logic disabled")
 	}

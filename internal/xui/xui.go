@@ -18,8 +18,8 @@ type SettingsRepository interface {
 	SetSettings(ctx context.Context, arg repository.SetSettingsParams) (repository.ChatSetting, error)
 }
 
-func NewHandler(client *Client, inboundID int, l *slog.Logger, repo SettingsRepository) *Handler {
-	return &Handler{
+func New(client *Client, inboundID int, l *slog.Logger, repo SettingsRepository) *Xui {
+	return &Xui{
 		client:    client,
 		inboundID: inboundID,
 		l:         l,
@@ -28,7 +28,7 @@ func NewHandler(client *Client, inboundID int, l *slog.Logger, repo SettingsRepo
 	}
 }
 
-type Handler struct {
+type Xui struct {
 	client    *Client
 	inboundID int
 	l         *slog.Logger
@@ -36,10 +36,10 @@ type Handler struct {
 	state     *helpers.SafeMap[int64, string]
 }
 
-func (h *Handler) Handle(ctx context.Context, u *telegram.Update, bot *telegram.Bot) error {
+func (x *Xui) Handle(ctx context.Context, u *telegram.Update, bot *telegram.Bot) error {
 	// should answer
 	if u.CallbackQuery != nil && strings.HasPrefix(u.CallbackQuery.Data, "vpn_") {
-		return h.handleCallback(ctx, u.CallbackQuery, bot)
+		return x.handleCallback(ctx, u.CallbackQuery, bot)
 	}
 
 	// only for private chats
@@ -48,7 +48,7 @@ func (h *Handler) Handle(ctx context.Context, u *telegram.Update, bot *telegram.
 	}
 
 	// check if key name expected
-	if state, ok := h.state.Get(u.Message.Chat.ID); ok {
+	if state, ok := x.state.Get(u.Message.Chat.ID); ok {
 		// consider to use another delimeter maybe
 		parts := strings.Split(state, "_")
 		if messageID, err := strconv.ParseInt(parts[len(parts)-1], 10, 64); err == nil {
@@ -56,14 +56,14 @@ func (h *Handler) Handle(ctx context.Context, u *telegram.Update, bot *telegram.
 
 			switch state {
 			case "vpn_enter_new_key_name_expected":
-				return h.createKey(ctx, messageID, u.Message, bot)
+				return x.createKey(ctx, messageID, u.Message, bot)
 			case "vpn_enter_existing_key_name_expected":
-				return h.deleteKey(ctx, messageID, u.Message, bot)
+				return x.deleteKey(ctx, messageID, u.Message, bot)
 			}
 		}
 
-		h.l.Error("unexpected vpn state", "state", state)
-		h.state.Delete(u.Message.Chat.ID)
+		x.l.Error("unexpected vpn state", "state", state)
+		x.state.Delete(u.Message.Chat.ID)
 		_, err := bot.SendMessage(ctx, &telegram.SendMessageParams{
 			ChatID: u.Message.Chat.ID,
 			Text:   i18n("vpn_unexpected_state"),
@@ -75,10 +75,10 @@ func (h *Handler) Handle(ctx context.Context, u *telegram.Update, bot *telegram.
 	for _, command := range u.Message.Commands() {
 		switch command {
 		case "/start":
-			return h.handlePayload(ctx, u.Message, bot)
+			return x.handlePayload(ctx, u.Message, bot)
 		case "/vpnhelp":
-			if h.checkAccess(u.Message) {
-				return h.help(ctx, u.Message, bot)
+			if x.checkAccess(u.Message) {
+				return x.help(ctx, u.Message, bot)
 			}
 			_, err := bot.SendMessage(ctx, &telegram.SendMessageParams{
 				ChatID: u.Message.Chat.ID,
@@ -90,13 +90,13 @@ func (h *Handler) Handle(ctx context.Context, u *telegram.Update, bot *telegram.
 	return nil
 }
 
-func (h *Handler) checkAccess(m *telegram.Message) bool {
-	data, err := h.repo.GetSettings(context.Background(), repository.GetSettingsParams{
+func (x *Xui) checkAccess(m *telegram.Message) bool {
+	data, err := x.repo.GetSettings(context.Background(), repository.GetSettingsParams{
 		ChatID: m.Chat.ID,
 		Key:    "vpn.enabled",
 	})
 	if err != nil {
-		h.l.Error("failed to get settings", "chat_id", m.Chat.ID, "error", err)
+		x.l.Error("failed to get settings", "chat_id", m.Chat.ID, "error", err)
 		return false
 	}
 
@@ -104,15 +104,15 @@ func (h *Handler) checkAccess(m *telegram.Message) bool {
 		Enabled bool `json:"enabled"`
 	}
 	if err = json.Unmarshal(data.Value, &settings); err != nil {
-		h.l.Error("failed to unmarshal settings", "chat_id", m.Chat.ID, "error", err)
+		x.l.Error("failed to unmarshal settings", "chat_id", m.Chat.ID, "error", err)
 		return false
 	}
 
 	return settings.Enabled
 }
 
-func (h *Handler) help(ctx context.Context, m *telegram.Message, bot *telegram.Bot) error {
-	keys, err := h.client.GetKeys(ctx, h.inboundID, m.Chat.ID)
+func (x *Xui) help(ctx context.Context, m *telegram.Message, bot *telegram.Bot) error {
+	keys, err := x.client.GetKeys(ctx, x.inboundID, m.Chat.ID)
 	if err != nil {
 		return fmt.Errorf("failed to get keys: %w", err)
 	}
@@ -126,26 +126,26 @@ func (h *Handler) help(ctx context.Context, m *telegram.Message, bot *telegram.B
 			IsDisabled: isDisabled,
 		},
 		ReplyMarkup: telegram.InlineKeyboardMarkup{
-			InlineKeyboard: h.makeKeyboard(keys),
+			InlineKeyboard: x.makeKeyboard(keys),
 		},
 	})
 	return err
 }
 
-func (h *Handler) handlePayload(ctx context.Context, m *telegram.Message, bot *telegram.Bot) error {
+func (x *Xui) handlePayload(ctx context.Context, m *telegram.Message, bot *telegram.Bot) error {
 	parts := strings.SplitN(m.Text, " ", 2)
 	if len(parts) < 2 {
 		return nil
 	}
 
 	if parts[1] != "vpnhelp" {
-		h.l.Warn("unexpected payload", "payload", parts[1])
+		x.l.Warn("unexpected payload", "payload", parts[1])
 		return nil
 	}
 
-	h.l.Info("enable vpn access", "chat_id", m.Chat.ID)
+	x.l.Info("enable vpn access", "chat_id", m.Chat.ID)
 
-	if _, err := h.repo.SetSettings(context.Background(), repository.SetSettingsParams{
+	if _, err := x.repo.SetSettings(context.Background(), repository.SetSettingsParams{
 		ChatID: m.Chat.ID,
 		Key:    "vpn.enabled",
 		Value:  json.RawMessage(`{"enabled": true}`),
@@ -153,11 +153,11 @@ func (h *Handler) handlePayload(ctx context.Context, m *telegram.Message, bot *t
 		return fmt.Errorf("failed to save settings: %s", err)
 	}
 
-	return h.help(ctx, m, bot)
+	return x.help(ctx, m, bot)
 }
 
-func (h *Handler) createKey(ctx context.Context, messageID int64, m *telegram.Message, bot *telegram.Bot) error {
-	h.l.Info("create new key", "name", m.Text)
+func (x *Xui) createKey(ctx context.Context, messageID int64, m *telegram.Message, bot *telegram.Bot) error {
+	x.l.Info("create new key", "name", m.Text)
 	if len(m.Text) > 64 {
 		_, err := bot.SendMessage(ctx, &telegram.SendMessageParams{
 			ChatID: m.Chat.ID,
@@ -166,12 +166,12 @@ func (h *Handler) createKey(ctx context.Context, messageID int64, m *telegram.Me
 		return err
 	}
 
-	key, err := h.client.CreateKey(ctx, h.inboundID, m.Text, m.Chat.ID, m.From)
+	key, err := x.client.CreateKey(ctx, x.inboundID, m.Text, m.Chat.ID, m.From)
 	if err != nil {
 		return fmt.Errorf("failed to create new key: %w", err)
 	}
 
-	h.state.Delete(m.Chat.ID)
+	x.state.Delete(m.Chat.ID)
 
 	if _, err := bot.DeleteMessage(ctx, &telegram.DeleteMessageParams{
 		ChatID:    m.Chat.ID,
@@ -194,7 +194,7 @@ func (h *Handler) createKey(ctx context.Context, messageID int64, m *telegram.Me
 	return err
 }
 
-func (h *Handler) deleteKey(ctx context.Context, messageID int64, m *telegram.Message, bot *telegram.Bot) error {
+func (h *Xui) deleteKey(ctx context.Context, messageID int64, m *telegram.Message, bot *telegram.Bot) error {
 	h.l.Info("delete key", "name", m.Text)
 	keys, err := h.client.GetKeys(ctx, h.inboundID, m.Chat.ID)
 	if err != nil {
@@ -241,18 +241,18 @@ func (h *Handler) deleteKey(ctx context.Context, messageID int64, m *telegram.Me
 	return err
 }
 
-func (h *Handler) handleCallback(ctx context.Context, c *telegram.CallbackQuery, bot *telegram.Bot) error {
+func (x *Xui) handleCallback(ctx context.Context, c *telegram.CallbackQuery, bot *telegram.Bot) error {
 	// It's always a real message in this case
 	m := c.MaybeInaccessibleMessage
-	h.l.Info("got callback", "id", c.ID, "data", c.Data, "message_id", m.ID, "chat_id", m.Chat.ID)
+	x.l.Info("got callback", "id", c.ID, "data", c.Data, "message_id", m.ID, "chat_id", m.Chat.ID)
 
 	if err := bot.AnswerCallbackQuery(ctx, &telegram.AnswerCallbackQueryParams{CallbackQueryID: c.ID}); err != nil {
-		h.l.Error("failed to answer callback", "id", c.ID, "message_id", m.ID, "chat_id", m.Chat.ID)
+		x.l.Error("failed to answer callback", "id", c.ID, "message_id", m.ID, "chat_id", m.Chat.ID)
 	}
 
 	switch c.Data {
 	case "vpn_create_key":
-		h.state.Set(m.Chat.ID, fmt.Sprintf("vpn_enter_new_key_name_expected_%d", m.ID))
+		x.state.Set(m.Chat.ID, fmt.Sprintf("vpn_enter_new_key_name_expected_%d", m.ID))
 
 		buttons := [][]telegram.InlineKeyboardButton{
 			{{Text: i18n("vpn_button_back"), CallbackData: "vpn_back"}},
@@ -269,12 +269,12 @@ func (h *Handler) handleCallback(ctx context.Context, c *telegram.CallbackQuery,
 		return err
 
 	case "vpn_delete_key":
-		keys, err := h.client.GetKeys(ctx, h.inboundID, m.Chat.ID)
+		keys, err := x.client.GetKeys(ctx, x.inboundID, m.Chat.ID)
 		if err != nil {
 			return fmt.Errorf("failed to get keys: %w", err)
 		}
 
-		h.state.Set(m.Chat.ID, fmt.Sprintf("vpn_enter_existing_key_name_expected_%d", m.ID))
+		x.state.Set(m.Chat.ID, fmt.Sprintf("vpn_enter_existing_key_name_expected_%d", m.ID))
 
 		text := []string{i18n("vpn_enter_delete_key_name_top")}
 		for _, key := range keys {
@@ -296,7 +296,7 @@ func (h *Handler) handleCallback(ctx context.Context, c *telegram.CallbackQuery,
 		return err
 
 	case "vpn_manage_key":
-		keys, err := h.client.GetKeys(ctx, h.inboundID, m.Chat.ID)
+		keys, err := x.client.GetKeys(ctx, x.inboundID, m.Chat.ID)
 		if err != nil {
 			return fmt.Errorf("failed to get keys: %w", err)
 		}
@@ -323,12 +323,12 @@ func (h *Handler) handleCallback(ctx context.Context, c *telegram.CallbackQuery,
 		return err
 
 	case "vpn_back":
-		keys, err := h.client.GetKeys(ctx, h.inboundID, m.Chat.ID)
+		keys, err := x.client.GetKeys(ctx, x.inboundID, m.Chat.ID)
 		if err != nil {
 			return fmt.Errorf("failed to get keys: %w", err)
 		}
 
-		h.state.Delete(m.Chat.ID)
+		x.state.Delete(m.Chat.ID)
 
 		_, err = bot.EditMessageText(ctx, &telegram.EditMessageTextParams{
 			ChatID:    m.Chat.ID,
@@ -339,18 +339,18 @@ func (h *Handler) handleCallback(ctx context.Context, c *telegram.CallbackQuery,
 				IsDisabled: true,
 			},
 			ReplyMarkup: telegram.InlineKeyboardMarkup{
-				InlineKeyboard: h.makeKeyboard(keys),
+				InlineKeyboard: x.makeKeyboard(keys),
 			},
 		})
 		return err
 
 	default:
-		h.l.Error("ingnoring callback", "data", c.Data)
+		x.l.Error("ingnoring callback", "data", c.Data)
 		return fmt.Errorf("unexpected callback data: %s", c.Data)
 	}
 }
 
-func (h *Handler) makeKeyboard(keys []*VpnKey) [][]telegram.InlineKeyboardButton {
+func (*Xui) makeKeyboard(keys []*VpnKey) [][]telegram.InlineKeyboardButton {
 	buttons := [][]telegram.InlineKeyboardButton{}
 
 	if len(keys) < 10 {
