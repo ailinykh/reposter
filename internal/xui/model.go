@@ -7,12 +7,6 @@ type VpnKey struct {
 	Key    string
 }
 
-type InboundResponse struct {
-	Success bool    `json:"success"`
-	Msg     string  `json:"msg"`
-	Obj     Inbound `json:"obj"`
-}
-
 type Inbound struct {
 	ID             int    `json:"id"`
 	Port           int    `json:"port"`
@@ -35,21 +29,17 @@ type InboundClient struct {
 }
 
 type InboundStreamSettings struct {
-	Network         string                 `json:"network"`
-	Security        string                 `json:"security"`
-	RealitySettings InboundRealitySettings `json:"realitySettings"`
-}
-
-type InboundRealitySettings struct {
-	ShortIDS    []string                    `json:"shortIds"`
-	ServerNames []string                    `json:"serverNames"`
-	Settings    InboundRealitySettingsInner `json:"settings"`
-}
-
-type InboundRealitySettingsInner struct {
-	PublikKey   string `json:"publicKey"`
-	Fingerprint string `json:"fingerprint"`
-	SpiderX     string `json:"spiderX"`
+	Network         string `json:"network"`
+	Security        string `json:"security"`
+	RealitySettings struct {
+		ShortIDS    []string `json:"shortIds"`
+		ServerNames []string `json:"serverNames"`
+		Settings    struct {
+			PublikKey   string `json:"publicKey"`
+			Fingerprint string `json:"fingerprint"`
+			SpiderX     string `json:"spiderX"`
+		} `json:"settings"`
+	} `json:"realitySettings"`
 }
 
 type CreateClientRequest struct {

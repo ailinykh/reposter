@@ -53,18 +53,22 @@ func (c *Client) GetInbounds(ctx context.Context) ([]Inbound, error) {
 func (c *Client) GetKeys(ctx context.Context, inboundId int, chatId int64) ([]*VpnKey, error) {
 	urlString := fmt.Sprintf("%s/panel/api/inbounds/get/%d", c.baseUrl, inboundId)
 
-	var inboundResp InboundResponse
-	if err := c.do(ctx, "GET", urlString, nil, &inboundResp); err != nil {
+	var inbound struct {
+		Success bool    `json:"success"`
+		Msg     string  `json:"msg"`
+		Obj     Inbound `json:"obj"`
+	}
+	if err := c.do(ctx, "GET", urlString, nil, &inbound); err != nil {
 		return nil, fmt.Errorf("failed to parse inboundResponse: %w", err)
 	}
 
 	var inboundStreamSettings InboundStreamSettings
-	if err := json.Unmarshal([]byte(inboundResp.Obj.StreamSettings), &inboundStreamSettings); err != nil {
+	if err := json.Unmarshal([]byte(inbound.Obj.StreamSettings), &inboundStreamSettings); err != nil {
 		return nil, fmt.Errorf("failed to parse streamSettings: %w", err)
 	}
 
 	var inboundSettings InboundSettings
-	if err := json.Unmarshal([]byte(inboundResp.Obj.Settings), &inboundSettings); err != nil {
+	if err := json.Unmarshal([]byte(inbound.Obj.Settings), &inboundSettings); err != nil {
 		return nil, fmt.Errorf("failed to parse settings: %w", err)
 	}
 
@@ -79,10 +83,10 @@ func (c *Client) GetKeys(ctx context.Context, inboundId int, chatId int64) ([]*V
 		if len(parts) == 3 && strconv.FormatInt(chatId, 10) == parts[0] {
 			key := fmt.Sprintf(
 				"%s://%s@%s:%d?type=%s&security=%s&pbk=%s&fp=%s&sni=%s&sid=%s&spx=%s#%s",
-				inboundResp.Obj.Protocol,
+				inbound.Obj.Protocol,
 				client.ID,
 				baseUrl.Hostname(),
-				inboundResp.Obj.Port,
+				inbound.Obj.Port,
 				inboundStreamSettings.Network,
 				inboundStreamSettings.Security,
 				inboundStreamSettings.RealitySettings.Settings.PublikKey,
