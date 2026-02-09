@@ -31,7 +31,7 @@ type YtDlp struct {
 	l    *slog.Logger
 }
 
-func (yd *YtDlp) GetFormat(url string) (r *Response, err error) {
+func (yd *YtDlp) GetFormatRaw(url string) ([]byte, error) {
 	cmd := strings.Join(append(yd.args, "--dump-json", url), " ")
 	yd.l.Debug("executing", "command", cmd)
 
@@ -39,6 +39,15 @@ func (yd *YtDlp) GetFormat(url string) (r *Response, err error) {
 	if err != nil {
 		yd.l.Error("failed to dump json", "url", url, "output", out, "error", err)
 		return nil, fmt.Errorf("failed to dump json: %w", NewError(err, out))
+	}
+
+	return out, nil
+}
+
+func (yd *YtDlp) GetFormat(url string) (r *Response, err error) {
+	out, err := yd.GetFormatRaw(url)
+	if err != nil {
+		return nil, err
 	}
 
 	err = json.Unmarshal(out, &r)
