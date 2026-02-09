@@ -5,13 +5,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/url"
-	"os"
 	"slices"
 	"strings"
 	"time"
 
 	"github.com/ailinykh/reposter/v3/internal/repository"
-	"github.com/ailinykh/reposter/v3/pkg/ffmpeg"
 	"github.com/ailinykh/reposter/v3/pkg/telegram"
 	"github.com/ailinykh/reposter/v3/pkg/ytdlp"
 )
@@ -131,7 +129,7 @@ func (h *Handler) sendAsLocalFile(ctx context.Context, key, caption string, r *y
 	}
 
 	if r.MediaType == "short" {
-		cropped, err := h.croppedThumb(r, video)
+		cropped, err := CroppedThumb(r, video)
 		if err == nil {
 			t = telegram.InputFileLocal{
 				Name:   video.Thumb.Name,
@@ -178,31 +176,4 @@ func (h *Handler) sendAsLocalFile(ctx context.Context, key, caption string, r *y
 		Value: data,
 	})
 	return err
-}
-
-func (h *Handler) croppedThumb(r *ytdlp.Response, v *ytdlp.LocalVideo) (*ytdlp.LocalFile, error) {
-	info, err := ffmpeg.GetInfo(v.Thumb.Path)
-	if err != nil {
-		return nil, err
-	}
-
-	if len(info.Streams) < 1 {
-		return nil, fmt.Errorf("no stream found at %s", v.Thumb.Path)
-	}
-
-	w := r.Width * info.Streams[0].Height / r.Height
-	cropped, err := ffmpeg.Crop(v.Thumb.Path, w, info.Streams[0].Height)
-	if err != nil {
-		return nil, fmt.Errorf("failed to crop %s: %w", v.Thumb.Path, err)
-	}
-
-	f, err := os.Open(cropped)
-	if err != nil {
-		return nil, fmt.Errorf("failed to open cropped file: %w", err)
-	}
-
-	return &ytdlp.LocalFile{
-		File: f,
-		Path: cropped,
-	}, nil
 }
