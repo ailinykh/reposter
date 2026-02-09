@@ -82,7 +82,7 @@ func (h *Handler) handleSocial(ctx context.Context, urlString string, m *telegra
 }
 
 func (h *Handler) sendAsFileID(ctx context.Context, key, caption string, m *telegram.Message, bot *telegram.Bot) error {
-	cache, err := h.cache.Get(context.Background(), key)
+	cache, err := h.cache.Get(ctx, key)
 	if err != nil {
 		return err
 	}
@@ -173,7 +173,7 @@ func (h *Handler) sendAsLocalFile(ctx context.Context, key, caption string, r *y
 		return fmt.Errorf("failed to encode videos: %w", err)
 	}
 
-	_, err = h.cache.Set(context.Background(), repository.SetParams{
+	_, err = h.cache.Set(ctx, repository.SetParams{
 		Key:   key,
 		Value: data,
 	})
