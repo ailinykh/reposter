@@ -3,20 +3,42 @@ package hotlink
 import (
 	"fmt"
 	"os"
+	"regexp"
 
 	"github.com/ailinykh/reposter/v3/pkg/ffmpeg"
 	"github.com/ailinykh/reposter/v3/pkg/telegram"
 	"github.com/ailinykh/reposter/v3/pkg/ytdlp"
 )
 
+func ExpandURL(url string) (string, error) {
+	r := regexp.MustCompile(`https://(?i:twitter|x)\.com\S+/status/(\d+)`)
+	match := r.FindStringSubmatch(url)
+	if len(match) > 0 {
+		return "https://x.com/status/" + match[len(match)-1], nil
+	}
+
+	r = regexp.MustCompile(`youtu\.?be(\.com)?(\/shorts)?(\/live)?\/(watch\?v=)?([\w\-_]{11})`)
+	match = r.FindStringSubmatch(url)
+	if len(match) > 0 {
+		return "https://youtu.be/" + match[len(match)-1], nil
+	}
+
+	r = regexp.MustCompile(`instagram.com/reel/([\w\-_]{11})`)
+	match = r.FindStringSubmatch(url)
+	if len(match) > 0 {
+		return "https://instagram.com/reel/" + match[len(match)-1], nil
+	}
+
+	return "", fmt.Errorf("url not supported")
+}
+
 func MediaFromVideos(videos []*telegram.Video, caption string) []telegram.InputMedia {
 	medias := []telegram.InputMedia{}
 	for i, v := range videos {
 		video := telegram.InputMediaVideo{
-			Type:                  "video",
-			Media:                 v.FileID,
-			ParseMode:             telegram.ParseModeHTML,
-			ShowCaptionAboveMedia: true,
+			Type:      "video",
+			Media:     v.FileID,
+			ParseMode: telegram.ParseModeHTML,
 		}
 		if (len(videos) - 1) == i {
 			video.Caption = caption

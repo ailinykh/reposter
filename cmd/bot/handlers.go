@@ -23,12 +23,30 @@ type UpdateHandler interface {
 func makeHandlers(
 	logger *slog.Logger,
 	repo *repository.Queries,
+	bot *telegram.Bot,
 ) []UpdateHandler {
 	handlers := []UpdateHandler{
 		fotd.NewGame(logger.With("handler", "fotd"), repo),
 		info.New(),
-		hotlink.New(
+	}
+
+	chatID, err := strconv.ParseInt(os.Getenv("DEFAULT_CHAT_ID"), 10, 64)
+	if err != nil {
+		logger.Warn("hotlink logic disabled", "error", err)
+	} else {
+		logger.Info("running hotlink", "chat_id", chatID)
+		handlers = append(handlers, hotlink.New(
 			logger.With("handler", "hotlink"),
+			hotlink.NewLocalQueue(
+				chatID,
+				logger,
+				bot,
+				repo,
+				ytdlp.New(
+					ytdlp.WithArgs(getYtDlpArgs()),
+					ytdlp.WithLogger(logger.With("tool", "yt-dlp")),
+				),
+			),
 			repo,
 			xcom.New(logger),
 			ytdlp.New(
@@ -36,6 +54,7 @@ func makeHandlers(
 				ytdlp.WithLogger(logger.With("tool", "yt-dlp")),
 			),
 		),
+		)
 	}
 
 	baseUrl := os.Getenv("XUI_BASE_URL")

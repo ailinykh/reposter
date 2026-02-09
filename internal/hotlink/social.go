@@ -2,178 +2,70 @@ package hotlink
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
-	"net/url"
-	"slices"
 	"strings"
 	"time"
 
-	"github.com/ailinykh/reposter/v3/internal/repository"
 	"github.com/ailinykh/reposter/v3/pkg/telegram"
-	"github.com/ailinykh/reposter/v3/pkg/ytdlp"
+	"github.com/google/uuid"
 )
 
 func (h *Handler) handleSocial(ctx context.Context, urlString string, m *telegram.Message, bot *telegram.Bot) error {
-	url, err := url.Parse(urlString)
+	expanded, err := ExpandURL(urlString)
 	if err != nil {
-		return fmt.Errorf("failed to parse url: %w", err)
-	}
-
-	h.l.Info("processing url", "hostname", url.Hostname(), "url", urlString)
-
-	xHostnames := []string{
-		"twitter.com",
-		"x.com",
-	}
-	if slices.Contains(xHostnames, url.Hostname()) {
-		return h.handleXcom(ctx, urlString, m, bot)
-	}
-
-	supportedHostnames := []string{
-		"instagram.com",
-		"www.instagram.com",
-		"tiktok.com",
-		"www.youtube.com",
-		"youtube.com",
-		"youtu.be",
-	}
-
-	if !slices.Contains(supportedHostnames, url.Hostname()) {
-		h.l.Info("url not supported yet", "hostname", url.Hostname(), "url", url)
 		return ErrURLNotSupported
 	}
 
-	r, err := h.yd.GetFormat(urlString)
-	if err != nil {
-		return fmt.Errorf("failed to get format: %w", err)
+	if strings.Contains(expanded, "x.com/status") {
+		return h.handleXcom(ctx, urlString, m, bot)
 	}
 
-	if r.MediaType == "livestream" {
-		return fmt.Errorf("live stream is not supported yet")
-	}
-
-	caption := fmt.Sprintf("<a href=\"%s\">🎞</a> <b>%s</b> <i>(by %s)</i>\n\n%s", r.OriginalUrl, r.Title, m.From.DisplayName(), r.Description)
-	if len(caption) > 1024 {
-		caption = caption[:1024]
-	}
-	caption = strings.ToValidUTF8(caption, "")
-
-	key := fmt.Sprintf("%s.id.%s.bot.%s.messages", strings.ToLower(r.Extractor), r.ID, bot.Username)
-	if err := h.sendAsFileID(ctx, key, caption, m, bot); err != nil {
-		h.l.Error("failed to send by file_id", "key", key, "error", err)
-	}
-
-	const maxSize int64 = 50_000_000 // Telegram multipart/form-data limit
-	if r.Filesize > maxSize {
-		h.l.Warn("video too long", "id", r.ID, "extractor", r.Extractor, "size", r.Filesize, "duration", r.Duration)
-		if !m.Chat.Private() {
-			return nil // be silent in group chat
-		}
-		return &VideoTooLongError{
-			Duration: time.Duration(r.Duration),
-			Title:    r.Title,
-		}
-	}
-
-	return h.sendAsLocalFile(ctx, key, caption, r, m, bot)
-}
-
-func (h *Handler) sendAsFileID(ctx context.Context, key, caption string, m *telegram.Message, bot *telegram.Bot) error {
-	cache, err := h.cache.Get(ctx, key)
-	if err != nil {
-		return err
-	}
-
-	var messages []*telegram.Message
-	if err = json.Unmarshal(cache.Value, &messages); err != nil {
-		return err
-	}
-
-	h.l.Info("got messages from cache", "key", key, "count", len(messages))
-
-	videos := VideoFromMessages(messages)
-
-	switch len(videos) {
-	case 0:
-		return fmt.Errorf("no videos found in cached messages")
-	case 1:
-		_, err = bot.SendVideo(ctx, &telegram.SendVideoParams{
-			ChatID: m.Chat.ID,
-			Video: telegram.InputFileURL(
-				videos[0].FileID,
-			),
-			Caption:   caption,
-			ParseMode: telegram.ParseModeHTML,
-		})
-		return err
-	default:
-		_, err := bot.SendMediaGroup(ctx, &telegram.SendMediaGroupParams{
-			ChatID: m.Chat.ID,
-			Media:  MediaFromVideos(videos, caption),
-		})
-		return err
-	}
-}
-
-func (h *Handler) sendAsLocalFile(ctx context.Context, key, caption string, r *ytdlp.Response, m *telegram.Message, bot *telegram.Bot) error {
-	video, err := h.yd.DownloadFormat(r.FormatID, r)
-	if err != nil {
-		return fmt.Errorf("failed to download file: %w", err)
-	}
-	defer video.Dispose()
-
-	t := telegram.InputFileLocal{
-		Name:   video.Thumb.Name,
-		Reader: video.Thumb.File,
-	}
-
-	if r.MediaType == "short" {
-		cropped, err := CroppedThumb(r, video)
-		if err == nil {
-			t = telegram.InputFileLocal{
-				Name:   video.Thumb.Name,
-				Reader: cropped.File,
+	ch := make(chan MediaTaskResult)
+	go func() {
+		result := <-ch
+		if result.Ok {
+			h.l.Info("✅ task completed!", "task_id", result.TaskID)
+			caption := fmt.Sprintf("<a href=\"%s\">🎞</a> <b>%s</b> <i>(by %s)</i>\n\n%s", urlString, result.Title, m.From.DisplayName(), result.Description)
+			if len(caption) > 1024 {
+				caption = caption[:1024]
 			}
-			defer cropped.Dispose()
+			caption = strings.ToValidUTF8(caption, "")
+
+			videos := VideoFromMessages(result.Messages)
+
+			switch len(videos) {
+			case 0:
+				h.l.Error("expect at least one video", "task_id", result.TaskID, "messages", result.Messages)
+			default:
+				if _, err = bot.SendMediaGroup(ctx, &telegram.SendMediaGroupParams{
+					ChatID: m.Chat.ID,
+					Media:  MediaFromVideos(videos, caption),
+				}); err != nil {
+					h.l.Error("failed to send media group", "task_id", result.TaskID, "error", err)
+				}
+			}
 		} else {
-			h.l.Error("failed to crop thumbnail", "error", err)
+			h.l.Error("failed to perform task", "task_id", result.TaskID, "error", result.Error)
+			if e := h.CanNotifyUser(result.Error); e != nil {
+				_, _ = bot.SendMessage(ctx, &telegram.SendMessageParams{
+					ChatID:    m.Chat.ID,
+					Text:      e.Error(),
+					ParseMode: telegram.ParseModeHTML,
+					ReplyParameters: &telegram.ReplyParameters{
+						MessageID: m.ID,
+						Quote:     urlString,
+					},
+				})
+			}
 		}
+	}()
+
+	task := MediaTask{
+		ID:   uuid.NewString(),
+		Date: time.Now(),
+		URL:  expanded,
 	}
+	h.l.Info("new task created", "task_id", task.ID, "url", task.URL)
 
-	m, err = bot.SendVideo(ctx, &telegram.SendVideoParams{
-		ChatID: m.Chat.ID,
-		Video: telegram.InputFileLocal{
-			Name:   video.Name,
-			Reader: video.File,
-		},
-		Duration:          int(r.Duration),
-		Width:             r.Width,
-		Height:            r.Height,
-		Thumbnail:         t,
-		Caption:           caption,
-		ParseMode:         telegram.ParseModeHTML,
-		SupportsStreaming: true,
-	})
-	if err != nil {
-		return fmt.Errorf("failed to send video: %w", err)
-	}
-
-	h.l.Info("video sent successfully", "extractor", r.Extractor, "size", r.Filesize, "duration", r.Duration)
-
-	if m.Video == nil {
-		return fmt.Errorf("no video in outgoing message found")
-	}
-
-	messages := []*telegram.Message{m}
-	data, err := json.Marshal(messages)
-	if err != nil {
-		return fmt.Errorf("failed to encode videos: %w", err)
-	}
-
-	_, err = h.cache.Set(ctx, repository.SetParams{
-		Key:   key,
-		Value: data,
-	})
-	return err
+	return h.q.Consume(ctx, task, ch)
 }

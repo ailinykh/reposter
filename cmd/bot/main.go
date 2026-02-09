@@ -19,7 +19,7 @@ func main() {
 	bot := NewBot(ctx, logger)
 	repo := repository.New(NewDB(logger))
 
-	startRunLoop(ctx, logger, bot, makeHandlers(logger, repo))
+	startRunLoop(ctx, logger, bot, makeHandlers(logger, repo, bot))
 	logger.Info("attempt to shutdown gracefully...")
 }
 
@@ -50,6 +50,7 @@ func startRunLoop(
 				}
 				offset = update.ID + 1
 			}
+			logger.Info("all updates processed", "current_offset", offset)
 		}
 	}
 }

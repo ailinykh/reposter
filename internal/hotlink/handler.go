@@ -17,9 +17,16 @@ type Repo interface {
 	Get(ctx context.Context, key string) (repository.Cache, error)
 }
 
-func New(l *slog.Logger, cache Repo, x *xcom.XComAPI, yd *ytdlp.YtDlp) *Handler {
+func New(
+	l *slog.Logger,
+	queue Queue,
+	cache Repo,
+	x *xcom.XComAPI,
+	yd *ytdlp.YtDlp,
+) *Handler {
 	return &Handler{
 		l:     l,
+		q:     queue,
 		cache: cache,
 		x:     x,
 		yd:    yd,
@@ -28,6 +35,7 @@ func New(l *slog.Logger, cache Repo, x *xcom.XComAPI, yd *ytdlp.YtDlp) *Handler 
 
 type Handler struct {
 	l     *slog.Logger
+	q     Queue
 	cache Repo
 	x     *xcom.XComAPI
 	yd    *ytdlp.YtDlp
@@ -39,32 +47,13 @@ func (h *Handler) Handle(ctx context.Context, u *telegram.Update, bot *telegram.
 		return nil
 	}
 
-	canNotifyUser := func(err error) error {
-		var tooLong *VideoTooLongError
-		if errors.As(err, &tooLong) {
-			return fmt.Errorf("%s\n<b>⏳ video too long: %d sec</b>", tooLong.Title, tooLong.Duration)
-		}
-
-		var xErr *xcom.Error
-		if errors.As(err, &xErr) {
-			return fmt.Errorf("😬 %s", xErr.Error())
-		}
-
-		var ytErr *ytdlp.Error
-		if errors.As(err, &ytErr) {
-			return fmt.Errorf("😬 %s", ytErr.Error())
-		}
-
-		return nil
-	}
-
 	for _, urlString := range u.Message.URLs() {
 		if err := h.handleSocial(ctx, urlString, u.Message, bot); err != nil {
 			if errors.Is(err, ErrURLNotSupported) {
 				return h.handleHotlink(ctx, urlString, u.Message, bot)
 			}
 
-			if e := canNotifyUser(err); e != nil {
+			if e := h.CanNotifyUser(err); e != nil {
 				_, _ = bot.SendMessage(ctx, &telegram.SendMessageParams{
 					ChatID:    u.Message.Chat.ID,
 					Text:      e.Error(),
@@ -79,6 +68,25 @@ func (h *Handler) Handle(ctx context.Context, u *telegram.Update, bot *telegram.
 				return err
 			}
 		}
+	}
+
+	return nil
+}
+
+func (h *Handler) CanNotifyUser(err error) error {
+	var tooLong *VideoTooLongError
+	if errors.As(err, &tooLong) {
+		return fmt.Errorf("%s\n<b>⏳ video too long: %d sec</b>", tooLong.Title, tooLong.Duration)
+	}
+
+	var xErr *xcom.Error
+	if errors.As(err, &xErr) {
+		return fmt.Errorf("😬 %s", xErr.Error())
+	}
+
+	var ytErr *ytdlp.Error
+	if errors.As(err, &ytErr) {
+		return fmt.Errorf("😬 %s", ytErr.Error())
 	}
 
 	return nil
