@@ -20,25 +20,19 @@ type Repo interface {
 func New(
 	l *slog.Logger,
 	queue Queue,
-	cache Repo,
 	x *xcom.XComAPI,
-	yd *ytdlp.YtDlp,
 ) *Handler {
 	return &Handler{
-		l:     l,
-		q:     queue,
-		cache: cache,
-		x:     x,
-		yd:    yd,
+		l: l,
+		q: queue,
+		x: x,
 	}
 }
 
 type Handler struct {
-	l     *slog.Logger
-	q     Queue
-	cache Repo
-	x     *xcom.XComAPI
-	yd    *ytdlp.YtDlp
+	l *slog.Logger
+	q Queue
+	x *xcom.XComAPI
 }
 
 func (h *Handler) Handle(ctx context.Context, u *telegram.Update, bot *telegram.Bot) error {

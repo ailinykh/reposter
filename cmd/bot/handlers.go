@@ -47,12 +47,7 @@ func makeHandlers(
 					ytdlp.WithLogger(logger.With("tool", "yt-dlp")),
 				),
 			),
-			repo,
 			xcom.New(logger),
-			ytdlp.New(
-				ytdlp.WithArgs(getYtDlpArgs()),
-				ytdlp.WithLogger(logger.With("tool", "yt-dlp")),
-			),
 		),
 		)
 	}
