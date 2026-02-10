@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"log/slog"
 	"strings"
+	"time"
 
 	"github.com/ailinykh/reposter/v3/internal/repository"
 	"github.com/ailinykh/reposter/v3/pkg/telegram"
@@ -109,6 +110,15 @@ func (q *LocalQueue) handle(ctx context.Context, task MediaTask) ([]*telegram.Me
 
 	if !errors.Is(err, sql.ErrNoRows) {
 		return nil, nil, err
+	}
+
+	const maxSize int64 = 50_000_000 // Telegram multipart/form-data limit
+	if r.Filesize > maxSize {
+		q.l.Warn("video too long", "id", r.ID, "extractor", r.Extractor, "size", r.Filesize, "duration", r.Duration)
+		return nil, nil, &VideoTooLongError{
+			Duration: time.Duration(r.Duration),
+			Title:    r.Title,
+		}
 	}
 
 	// No messages in cache found, try to upload it to channel
