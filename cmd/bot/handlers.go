@@ -5,6 +5,7 @@ import (
 	"log/slog"
 	"os"
 	"strconv"
+	"strings"
 
 	"github.com/ailinykh/reposter/v3/internal/fotd"
 	"github.com/ailinykh/reposter/v3/internal/hotlink"
@@ -43,7 +44,7 @@ func makeHandlers(
 				bot,
 				repo,
 				ytdlp.New(
-					ytdlp.WithArgs(getYtDlpArgs()),
+					ytdlp.WithProxyList(proxyList()),
 					ytdlp.WithLogger(logger.With("tool", "yt-dlp")),
 				),
 			),
@@ -67,10 +68,14 @@ func makeHandlers(
 	return handlers
 }
 
-func getYtDlpArgs() []string {
-	var args = []string{}
-	if value, ok := os.LookupEnv("PROXY"); ok {
-		args = append(args, "--proxy", value)
+func proxyList() []string {
+	var list = []string{}
+	for _, env := range os.Environ() {
+		if idx := strings.Index(env, "="); idx > 0 {
+			if strings.HasPrefix(env[:idx], "PROXY") {
+				list = append(list, env[idx+1:])
+			}
+		}
 	}
-	return args
+	return list
 }

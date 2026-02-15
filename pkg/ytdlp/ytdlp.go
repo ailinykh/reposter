@@ -2,6 +2,7 @@ package ytdlp
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log/slog"
 	"os"
@@ -12,13 +13,8 @@ import (
 
 func New(opts ...func(*YtDlp)) *YtDlp {
 	y := &YtDlp{
-		args: []string{
-			"yt-dlp",
-			"--ignore-config",
-			"-t", "sleep",
-			"-t", "mp4",
-		},
-		l: slog.Default(),
+		proxies: &ProxyList{},
+		l:       slog.Default(),
 	}
 	for _, o := range opts {
 		o(y)
@@ -27,18 +23,54 @@ func New(opts ...func(*YtDlp)) *YtDlp {
 }
 
 type YtDlp struct {
-	args []string
-	l    *slog.Logger
+	proxies *ProxyList
+	l       *slog.Logger
+}
+
+func (yd *YtDlp) Exec(args ...string) (out []byte, err error) {
+	args = append([]string{
+		// default args
+		"yt-dlp",
+		"--ignore-config",
+		"-t", "sleep",
+		"-t", "mp4",
+	}, args...)
+
+	// add proxy if exists
+	var proxy *Proxy
+	if proxy = yd.proxies.Next(); proxy != nil {
+		args = append(args, "--proxy", proxy.url)
+	} else {
+		yd.l.Warn("no working proxy found")
+	}
+
+	cmd := strings.Join(args, " ")
+	yd.l.Debug("executing", "command", strings.Replace(cmd, os.TempDir(), "$TMPDIR/", 1))
+
+	if out, err = exec.Command("/bin/sh", "-c", cmd).CombinedOutput(); err == nil {
+		// This is a happy path!
+		return out, err
+	}
+
+	yd.l.Error("failed to exec yt-dlp", "output", out, "error", err)
+	err = NewError(err, out)
+
+	// Mark proxy as banned
+	if proxy != nil {
+		var e *Error
+		if errors.As(err, &e) && e.Code == 403 {
+			yd.l.Debug("got 403 error using proxy", "error", e)
+			yd.proxies.MarkBanned(proxy)
+		}
+	}
+
+	return nil, err
 }
 
 func (yd *YtDlp) GetFormatRaw(url string) ([]byte, error) {
-	cmd := strings.Join(append(yd.args, "--dump-json", url), " ")
-	yd.l.Debug("executing", "command", cmd)
-
-	out, err := exec.Command("/bin/sh", "-c", cmd).Output()
+	out, err := yd.Exec("--quiet", "--no-warnings", "--dump-json", url)
 	if err != nil {
-		yd.l.Error("failed to dump json", "url", url, "output", out, "error", err)
-		return nil, fmt.Errorf("failed to dump json: %w", NewError(err, out))
+		return nil, fmt.Errorf("failed to dump json: %w", err)
 	}
 
 	return out, nil
@@ -65,7 +97,7 @@ func (yd *YtDlp) DownloadFormat(formatID string, resp *Response) (*LocalVideo, e
 		return nil, fmt.Errorf("failed to create temporary directory: %w", err)
 	}
 
-	cmd := strings.Join(append(yd.args,
+	if out, err := yd.Exec(
 		"--embed-metadata",
 		"--embed-thumbnail",
 		"--convert-thumbnails", "jpg",
@@ -76,12 +108,9 @@ func (yd *YtDlp) DownloadFormat(formatID string, resp *Response) (*LocalVideo, e
 		"-P", dirPath,
 		"-o", `"file.%(ext)s"`,
 		resp.WebpageUrl,
-	), " ")
-	yd.l.Debug("executing", "command", strings.Replace(cmd, os.TempDir(), "$TMPDIR/", 1))
-
-	if out, err := exec.Command("/bin/sh", "-c", cmd).CombinedOutput(); err != nil {
+	); err != nil {
 		yd.l.Error("failed to download video", "extractor", resp.Extractor, "format_id", formatID, "url", resp.WebpageUrl, "output", out)
-		return nil, fmt.Errorf("failed to dump json: %w", NewError(err, out))
+		return nil, fmt.Errorf("failed to download video: %w", err)
 	}
 
 	yd.l.Info("video downloaded successfully", "extractor", resp.Extractor, "format_id", formatID, "id", resp.ID)

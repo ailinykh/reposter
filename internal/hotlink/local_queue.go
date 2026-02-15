@@ -33,8 +33,10 @@ func NewLocalQueue(
 	}
 
 	go func() {
-		for task := range ch {
-			queue.process(task.ctx, task.task, task.callback)
+		for t := range ch {
+			queue.l.Info("🔹 processing task", "task_id", t.task.ID, "url", t.task.URL)
+			queue.process(t.ctx, t.task, t.callback)
+			queue.l.Info("🔸 task processed", "task_id", t.task.ID, "url", t.task.URL)
 		}
 	}()
 
@@ -68,7 +70,6 @@ func (q *LocalQueue) Consume(ctx context.Context, task MediaTask, cb chan MediaT
 }
 
 func (q *LocalQueue) process(ctx context.Context, task MediaTask, cb chan MediaTaskResult) {
-	q.l.Info("processing task", "task_id", task.ID, "url", task.URL)
 	messages, result, err := q.handle(ctx, task)
 	if err != nil {
 		cb <- MediaTaskResult{
@@ -146,8 +147,6 @@ func (q *LocalQueue) handle(ctx context.Context, task MediaTask) ([]*telegram.Me
 		}
 	}
 
-	caption, _ := json.MarshalIndent(task, "", "  ")
-
 	m, err := q.bot.SendVideo(ctx, &telegram.SendVideoParams{
 		ChatID: q.chatID,
 		Video: telegram.InputFileLocal{
@@ -158,7 +157,7 @@ func (q *LocalQueue) handle(ctx context.Context, task MediaTask) ([]*telegram.Me
 		Width:             r.Width,
 		Height:            r.Height,
 		Thumbnail:         t,
-		Caption:           fmt.Sprintf("<pre>%s</pre>", caption),
+		Caption:           fmt.Sprintf("<a href=\"%s\"><b>%s</b></a>\n%s", task.URL, r.Title, r.Description),
 		ParseMode:         telegram.ParseModeHTML,
 		SupportsStreaming: true,
 	})

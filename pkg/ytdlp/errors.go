@@ -2,7 +2,6 @@ package ytdlp
 
 import (
 	"fmt"
-	"os/exec"
 	"strings"
 )
 
@@ -16,16 +15,6 @@ func (err *Error) Error() string {
 }
 
 func NewError(err error, data []byte) error {
-	execErr, ok := err.(*exec.ExitError)
-	if !ok {
-		return &Error{Code: -1, Description: err.Error()}
-	}
-
-	stdErr := strings.ToLower(string(execErr.Stderr))
-	if stdErr == "" {
-		stdErr = string(data)
-	}
-
 	errors := []struct {
 		code        int
 		substring   string
@@ -42,7 +31,7 @@ func NewError(err error, data []byte) error {
 	}
 
 	for _, e := range errors {
-		if strings.Contains(stdErr, e.substring) {
+		if strings.Contains(strings.ToLower(string(data)), e.substring) {
 			return &Error{Code: e.code, Description: e.description}
 		}
 	}

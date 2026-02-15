@@ -62,7 +62,6 @@ func (h *Handler) handleMediaTaskResult(
 		return nil
 	}
 
-	h.l.Info("✅ task completed!", "task_id", result.TaskID)
 	caption := fmt.Sprintf("<a href=\"%s\">🎞</a> <b>%s</b> <i>(by %s)</i>\n\n%s", urlString, result.Title, m.From.DisplayName(), result.Description)
 	if len(caption) > 1024 {
 		caption = caption[:1024]

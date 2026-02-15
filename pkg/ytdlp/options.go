@@ -1,10 +1,12 @@
 package ytdlp
 
-import "log/slog"
+import (
+	"log/slog"
+)
 
-func WithArgs(args []string) func(*YtDlp) {
+func WithProxyList(proxyList []string) func(*YtDlp) {
 	return func(yd *YtDlp) {
-		yd.args = append(yd.args, args...)
+		yd.proxies = NewProxyList(proxyList)
 	}
 }
 
