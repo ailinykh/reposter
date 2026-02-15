@@ -39,13 +39,16 @@ func makeHandlers(
 		handlers = append(handlers, hotlink.New(
 			logger.With("handler", "hotlink"),
 			hotlink.NewLocalQueue(
-				chatID,
 				logger,
-				bot,
-				repo,
-				ytdlp.New(
-					ytdlp.WithProxyList(proxyList()),
-					ytdlp.WithLogger(logger.With("tool", "yt-dlp")),
+				hotlink.NewTaskHandler(
+					chatID,
+					logger,
+					bot,
+					repo,
+					ytdlp.New(
+						ytdlp.WithProxyList(proxyList()),
+						ytdlp.WithLogger(logger.With("tool", "yt-dlp")),
+					),
 				),
 			),
 			xcom.New(logger),
