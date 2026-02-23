@@ -4,15 +4,20 @@ import (
 	"context"
 	"log/slog"
 
+	"github.com/ailinykh/reposter/v3/internal/repository"
 	"github.com/ailinykh/reposter/v3/pkg/telegram"
 )
 
-func New(ctx context.Context, token string, logger *slog.Logger) *telegram.Bot {
+type Repo interface {
+	CreateBotTrace(ctx context.Context, arg repository.CreateBotTraceParams) error
+}
+
+func New(ctx context.Context, token string, logger *slog.Logger, repo Repo) *telegram.Bot {
 	bot, err := telegram.NewBot(
 		ctx,
 		telegram.WithToken(token),
 		telegram.WithLogger(logger),
-		telegram.WithClient(NewHttpClient(logger)),
+		telegram.WithClient(NewHttpClient(logger, repo)),
 	)
 
 	if err != nil {

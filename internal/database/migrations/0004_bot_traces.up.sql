@@ -1,0 +1,8 @@
+CREATE TABLE IF NOT EXISTS bot_traces (
+  id BIGSERIAL PRIMARY KEY,
+  bot_id BIGINT NOT NULL,
+  method TEXT NOT NULL,
+  request JSONB,
+  response JSONB NOT NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT NOW()
+);

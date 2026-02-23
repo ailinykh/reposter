@@ -16,3 +16,8 @@ sql:
             go_type:
               import: "time"
               type: "Time"
+          - column: "bot_traces.request"
+            go_type:
+              import: "encoding/json"
+              type: "RawMessage"
+              pointer: true

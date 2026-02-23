@@ -12,6 +12,15 @@ import (
 	"github.com/google/uuid"
 )
 
+type BotTrace struct {
+	ID        int64
+	BotID     int64
+	Method    string
+	Request   *json.RawMessage
+	Response  json.RawMessage
+	CreatedAt time.Time
+}
+
 type Cache struct {
 	ID        uuid.UUID
 	Key       string

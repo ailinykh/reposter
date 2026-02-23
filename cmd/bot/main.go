@@ -17,8 +17,8 @@ func main() {
 	defer cancel()
 
 	logger := log.NewLogger()
-	bot := bot.New(ctx, os.Getenv("TELEGRAM_BOT_TOKEN"), logger)
 	repo := repository.New(NewDB(logger))
+	bot := bot.New(ctx, os.Getenv("TELEGRAM_BOT_TOKEN"), logger, repo)
 
 	startRunLoop(ctx, logger, bot, makeHandlers(logger, repo, bot))
 	logger.Info("attempt to shutdown gracefully...")

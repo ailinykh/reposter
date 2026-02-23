@@ -24,8 +24,8 @@ func main() {
 	defer cancel()
 
 	logger := log.NewLogger()
-	bot := bot.New(ctx, os.Getenv("TELEGRAM_BOT_TOKEN_2"), logger)
 	repo := repository.New(NewDB(logger))
+	bot := bot.New(ctx, os.Getenv("TELEGRAM_BOT_TOKEN_2"), logger, repo)
 
 	chatID, err := strconv.ParseInt(os.Getenv("DEFAULT_CHAT_ID"), 10, 64)
 	if err != nil {

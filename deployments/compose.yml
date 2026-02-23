@@ -1,4 +1,28 @@
 services:
+  # Running a database in a docker container is considered bad practice
+  # Make sure that `healthcheck` uses an existing database user
+  # By default, it is `root`; so if you plan to change the default ${POSTGRES_USER}
+  # you should also change the `healthcheck` command, for example: `pg_isready -u postgres -d postgres`.
+  # 
+  # Also, don't forget to explicitly create a user with a database in production
+  # docker exec -i deployments-db-1 psql -U postgres -c "CREATE USER reposter WITH PASSWORD 'reposter';"
+  # docker exec -i deployments-db-1 psql -U postgres -c "CREATE DATABASE reposter OWNER reposter;"
+  db:
+    image: postgres:18
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-root}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-password}
+      PGDATA: /data/postgres
+    volumes:
+      - db:/data/postgres
+    ports:
+      - 5432:5432
+    restart: unless-stopped
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -d postgres" ]
+      interval: 30s
+      timeout: 10s
+      retries: 5
   rabbitmq:
     image: rabbitmq:3.13-management-alpine
     container_name: rabbitmq
@@ -10,5 +34,10 @@ services:
       RABBITMQ_DEFAULT_USER: guest
       RABBITMQ_DEFAULT_PASS: guest
     volumes:
-      - $PWD/rabbitmq/data/:/var/lib/rabbitmq/mnesia/
-      - $PWD/rabbitmq/logs/:/var/log/rabbitmq/
+      - rabbitmq-data:/var/lib/rabbitmq/mnesia/
+      - rabbitmq-logs:/var/log/rabbitmq/
+
+volumes:
+  db:
+  rabbitmq-data:
+  rabbitmq-logs:
