@@ -3,13 +3,11 @@ package hotlink
 import (
 	"context"
 	"errors"
-	"fmt"
 	"log/slog"
 
 	"github.com/ailinykh/reposter/v3/internal/repository"
 	"github.com/ailinykh/reposter/v3/pkg/telegram"
 	"github.com/ailinykh/reposter/v3/pkg/xcom"
-	"github.com/ailinykh/reposter/v3/pkg/ytdlp"
 )
 
 type Repo interface {
@@ -47,10 +45,10 @@ func (h *Handler) Handle(ctx context.Context, u *telegram.Update, bot *telegram.
 				return h.handleHotlink(ctx, urlString, u.Message, bot)
 			}
 
-			if e := h.CanNotifyUser(err); e != nil {
+			if e := NewMediaTaskError(err); e.NotifyUser {
 				_, _ = bot.SendMessage(ctx, &telegram.SendMessageParams{
 					ChatID:    u.Message.Chat.ID,
-					Text:      e.Error(),
+					Text:      e.Message,
 					ParseMode: telegram.ParseModeHTML,
 					ReplyParameters: &telegram.ReplyParameters{
 						MessageID: u.Message.ID,
@@ -62,25 +60,6 @@ func (h *Handler) Handle(ctx context.Context, u *telegram.Update, bot *telegram.
 				return err
 			}
 		}
-	}
-
-	return nil
-}
-
-func (h *Handler) CanNotifyUser(err error) error {
-	var tooLong *VideoTooLongError
-	if errors.As(err, &tooLong) {
-		return fmt.Errorf("%s\n<b>⏳ video too long: %d sec</b>", tooLong.Title, tooLong.Duration)
-	}
-
-	var xErr *xcom.Error
-	if errors.As(err, &xErr) {
-		return fmt.Errorf("😬 %s", xErr.Error())
-	}
-
-	var ytErr *ytdlp.Error
-	if errors.As(err, &ytErr) {
-		return fmt.Errorf("😬 %s", ytErr.Error())
 	}
 
 	return nil

@@ -4,9 +4,9 @@ import (
 	"log/slog"
 )
 
-func WithProxyList(proxyList []string) func(*YtDlp) {
+func WithProxyList(proxyList *ProxyList) func(*YtDlp) {
 	return func(yd *YtDlp) {
-		yd.proxies = NewProxyList(proxyList)
+		yd.proxies = proxyList
 	}
 }
 

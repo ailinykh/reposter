@@ -1,0 +1,14 @@
+services:
+  rabbitmq:
+    image: rabbitmq:3.13-management-alpine
+    container_name: rabbitmq
+    restart: unless-stopped
+    ports:
+      - 5672:5672 # The standard AMQP protocol port
+      - 15672:15672 # The HTTP management UI port
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    volumes:
+      - $PWD/rabbitmq/data/:/var/lib/rabbitmq/mnesia/
+      - $PWD/rabbitmq/logs/:/var/log/rabbitmq/

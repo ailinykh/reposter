@@ -1,13 +1,21 @@
 package ytdlp
 
-import "time"
+import (
+	"os"
+	"strings"
+	"time"
+)
 
-func NewProxyList(proxies []string) *ProxyList {
-	proxyList := []*Proxy{}
-	for _, p := range proxies {
-		proxyList = append(proxyList, NewProxy(p))
+func NewProxyList(prefix string) *ProxyList {
+	proxyList := ProxyList{}
+	for _, env := range os.Environ() {
+		if idx := strings.Index(env, "="); idx > 0 {
+			if strings.HasPrefix(env[:idx], prefix) {
+				proxyList = append(proxyList, NewProxy(env[idx+1:]))
+			}
+		}
 	}
-	return &ProxyList{}
+	return &proxyList
 }
 
 type ProxyList []*Proxy

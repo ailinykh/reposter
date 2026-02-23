@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/signal"
 
+	"github.com/ailinykh/reposter/v3/internal/bot"
 	"github.com/ailinykh/reposter/v3/internal/log"
 	"github.com/ailinykh/reposter/v3/internal/repository"
 	"github.com/ailinykh/reposter/v3/pkg/telegram"
@@ -16,7 +17,7 @@ func main() {
 	defer cancel()
 
 	logger := log.NewLogger()
-	bot := NewBot(ctx, logger)
+	bot := bot.New(ctx, os.Getenv("TELEGRAM_BOT_TOKEN"), logger)
 	repo := repository.New(NewDB(logger))
 
 	startRunLoop(ctx, logger, bot, makeHandlers(logger, repo, bot))

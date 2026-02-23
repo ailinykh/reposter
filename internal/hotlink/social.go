@@ -20,12 +20,6 @@ func (h *Handler) handleSocial(ctx context.Context, urlString string, m *telegra
 		return h.handleXcom(ctx, urlString, m, bot)
 	}
 
-	ch := make(chan MediaTaskResult)
-	go func() {
-		result := <-ch
-		h.handleMediaTaskResult(ctx, result, urlString, m, bot)
-	}()
-
 	task := MediaTask{
 		ID:   uuid.NewString(),
 		Date: time.Now(),
@@ -33,7 +27,16 @@ func (h *Handler) handleSocial(ctx context.Context, urlString string, m *telegra
 	}
 	h.l.Info("new task created", "task_id", task.ID, "url", task.URL)
 
-	return h.q.Consume(ctx, task, ch)
+	ch, err := h.q.Consume(ctx, task)
+	if err != nil {
+		return err
+	}
+
+	go func() {
+		result := <-ch
+		h.handleMediaTaskResult(ctx, result, urlString, m, bot)
+	}()
+	return nil
 }
 
 func (h *Handler) handleMediaTaskResult(
@@ -48,10 +51,11 @@ func (h *Handler) handleMediaTaskResult(
 		if !m.Chat.Private() {
 			return nil // silent in group chat
 		}
-		if err := h.CanNotifyUser(result.Error); err != nil {
+
+		if result.Error.NotifyUser {
 			_, _ = bot.SendMessage(ctx, &telegram.SendMessageParams{
 				ChatID:    m.Chat.ID,
-				Text:      err.Error(),
+				Text:      result.Error.Message,
 				ParseMode: telegram.ParseModeHTML,
 				ReplyParameters: &telegram.ReplyParameters{
 					MessageID: m.ID,
@@ -63,11 +67,6 @@ func (h *Handler) handleMediaTaskResult(
 	}
 
 	caption := fmt.Sprintf("<a href=\"%s\">🎞</a> <b>%s</b> <i>(by %s)</i>\n\n%s", urlString, result.Title, m.From.DisplayName(), result.Description)
-	if len(caption) > 1024 {
-		caption = caption[:1024]
-	}
-	caption = strings.ToValidUTF8(caption, "")
-
 	videos := VideoFromMessages(result.Messages)
 
 	switch len(videos) {
@@ -76,7 +75,7 @@ func (h *Handler) handleMediaTaskResult(
 	default:
 		if _, err := bot.SendMediaGroup(ctx, &telegram.SendMediaGroupParams{
 			ChatID: m.Chat.ID,
-			Media:  MediaFromVideos(videos, caption),
+			Media:  MediaFromVideos(videos, telegram.NormalizeCaption(caption)),
 		}); err != nil {
 			h.l.Error("failed to send media group", "task_id", result.TaskID, "error", err)
 		}

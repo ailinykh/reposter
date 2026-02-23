@@ -5,7 +5,6 @@ import (
 	"log/slog"
 	"os"
 	"strconv"
-	"strings"
 
 	"github.com/ailinykh/reposter/v3/internal/fotd"
 	"github.com/ailinykh/reposter/v3/internal/hotlink"
@@ -33,28 +32,15 @@ func makeHandlers(
 
 	chatID, err := strconv.ParseInt(os.Getenv("DEFAULT_CHAT_ID"), 10, 64)
 	if err != nil {
-		logger.Warn("hotlink logic disabled", "error", err)
-	} else {
-		logger.Info("running hotlink", "chat_id", chatID)
-		handlers = append(handlers, hotlink.New(
-			logger.With("handler", "hotlink"),
-			hotlink.NewLocalQueue(
-				logger,
-				hotlink.NewTaskHandler(
-					chatID,
-					logger,
-					bot,
-					repo,
-					ytdlp.New(
-						ytdlp.WithProxyList(proxyList()),
-						ytdlp.WithLogger(logger.With("tool", "yt-dlp")),
-					),
-				),
-			),
-			xcom.New(logger),
-		),
-		)
+		panic(err)
 	}
+
+	logger.Info("running hotlink", "chat_id", chatID)
+	handlers = append(handlers, hotlink.New(
+		logger.With("handler", "hotlink"),
+		makeQueue(chatID, logger, bot, repo),
+		xcom.New(logger),
+	))
 
 	baseUrl := os.Getenv("XUI_BASE_URL")
 	login := os.Getenv("XUI_LOGIN")
@@ -71,14 +57,33 @@ func makeHandlers(
 	return handlers
 }
 
-func proxyList() []string {
-	var list = []string{}
-	for _, env := range os.Environ() {
-		if idx := strings.Index(env, "="); idx > 0 {
-			if strings.HasPrefix(env[:idx], "PROXY") {
-				list = append(list, env[idx+1:])
-			}
+func makeQueue(
+	chatID int64,
+	logger *slog.Logger,
+	bot *telegram.Bot,
+	repo *repository.Queries,
+) hotlink.Queue {
+	if amqpURL, ok := os.LookupEnv("AMQP_URL"); ok {
+		queue, err := NewRemoteQueue(amqpURL, logger)
+		if err != nil {
+			panic(err)
 		}
+		return queue
 	}
-	return list
+
+	logger.Warn("AMQP_URL not passed, single node mode enabled")
+
+	return NewLocalQueue(
+		logger,
+		hotlink.NewTaskHandler(
+			chatID,
+			logger,
+			bot,
+			repo,
+			ytdlp.New(
+				ytdlp.WithProxyList(ytdlp.NewProxyList("PROXY")),
+				ytdlp.WithLogger(logger.With("tool", "yt-dlp")),
+			),
+		),
+	)
 }

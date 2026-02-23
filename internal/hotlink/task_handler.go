@@ -39,14 +39,35 @@ type TaskHandler struct {
 	yd     *ytdlp.YtDlp
 }
 
-func (h *TaskHandler) Process(ctx context.Context, task MediaTask) ([]*telegram.Message, *ytdlp.Response, error) {
+func (h *TaskHandler) Process(ctx context.Context, task MediaTask) MediaTaskResult {
+	messages, result, err := h.handle(ctx, task)
+	if err != nil {
+		return MediaTaskResult{
+			TaskID: task.ID,
+			Ok:     false,
+			Error:  NewMediaTaskError(err),
+		}
+	}
+	return MediaTaskResult{
+		TaskID:      task.ID,
+		Ok:          true,
+		Title:       result.Title,
+		Description: result.Description,
+		Messages:    messages,
+	}
+}
+
+func (h *TaskHandler) handle(ctx context.Context, task MediaTask) ([]*telegram.Message, *ytdlp.Response, error) {
 	r, err := h.GetFormat(ctx, task.URL)
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to get format: %w", err)
 	}
 
 	if r.MediaType == "livestream" {
-		return nil, nil, fmt.Errorf("live stream is not supported yet")
+		return nil, nil, &MediaTaskError{
+			NotifyUser: true,
+			Message:    "😬 live stream is not supported yet",
+		}
 	}
 
 	key := fmt.Sprintf("%s.id.%s.bot.%s.messages", strings.ToLower(r.Extractor), r.ID, h.bot.Username)
@@ -65,7 +86,7 @@ func (h *TaskHandler) Process(ctx context.Context, task MediaTask) ([]*telegram.
 	}
 
 	const maxSize int64 = 50_000_000 // Telegram multipart/form-data limit
-	if r.Filesize > maxSize {
+	if r.Filesize > maxSize || r.Duration > 360 {
 		h.l.Warn("video too long", "id", r.ID, "extractor", r.Extractor, "size", r.Filesize, "duration", r.Duration)
 		return nil, nil, &VideoTooLongError{
 			Duration: time.Duration(r.Duration),
@@ -108,7 +129,7 @@ func (h *TaskHandler) Process(ctx context.Context, task MediaTask) ([]*telegram.
 		Width:             r.Width,
 		Height:            r.Height,
 		Thumbnail:         t,
-		Caption:           fmt.Sprintf("<a href=\"%s\"><b>%s</b></a>\n%s", task.URL, r.Title, r.Description),
+		Caption:           telegram.NormalizeCaption(fmt.Sprintf("<a href=\"%s\"><b>%s</b></a>\n%s", task.URL, r.Title, r.Description)),
 		ParseMode:         telegram.ParseModeHTML,
 		SupportsStreaming: true,
 	})

@@ -3,36 +3,33 @@ ifneq (,$(wildcard ./.env))
     export
 endif
 
-.PHONY: all serve kill run test build clean restart
+.PHONY: bot worker pkill test clean restart
 
-APP ?= bin/bot
-PID = $(APP).pid
-GO_FILES = $(wildcard *.go)
+APP1 ?= bin/bot
+APP2 ?= bin/worker
+GO_FILES = $(shell find . -name '*.go' -not -path './vendor/*')
 
-all: serve
+bot: bin/bot
+	@$^ &
+	@fswatch -x -o --event Created --event Updated --event Renamed -r -e '.*' -i '\.go$$' . | xargs -n1 -I{} make restart APP=bot || make pkill
 
-before:
-	@echo "🛠 rebuilding an app..."
+worker: bin/worker
+	@$^ &
+	@fswatch -x -o --event Created --event Updated --event Renamed -r -e '.*' -i '\.go$$' . | xargs -n1 -I{} make restart APP=worker || make pkill
 
-serve: run
-	@fswatch -x -o --event Created --event Updated --event Renamed -r -e '.*' -i '\.go$$'  . | xargs -n1 -I{}  make restart || make kill
-
-$(APP): $(GO_FILES)
-	@go build $? -o $@
-
-kill:
-	@kill `cat $(PID)` || true
-
-run: build
-	@$(APP) & echo $$! > $(PID)
+pkill:
+	@pkill -f "bin/(bot|worker)" || true
 
 test:
-	go test ./... -v -coverprofile=coverage.txt -race -covermode=atomic
+	go test ./... -v -coverprofile=coverage.txt -race -covermode=atomic -timeout 5m
 
-build: $(GO_FILES)
-	@go build -o $(APP) ./cmd/bot
+bin/%: cmd/% $(GO_FILES)
+	@echo "🛠️ building $< ..."
+	@go build -o $@ ./$<   
+# $@ = bin/bot, $< = cmd/bot
 
 clean:
-	rm -f $(APP)
+	rm -f $(APP1) $(APP2)
 
-restart: kill before build run
+restart: pkill
+	@make $(APP)

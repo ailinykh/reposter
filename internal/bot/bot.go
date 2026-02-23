@@ -1,17 +1,16 @@
-package main
+package bot
 
 import (
 	"context"
 	"log/slog"
-	"os"
 
 	"github.com/ailinykh/reposter/v3/pkg/telegram"
 )
 
-func NewBot(ctx context.Context, logger *slog.Logger) *telegram.Bot {
+func New(ctx context.Context, token string, logger *slog.Logger) *telegram.Bot {
 	bot, err := telegram.NewBot(
 		ctx,
-		telegram.WithToken(os.Getenv("TELEGRAM_BOT_TOKEN")),
+		telegram.WithToken(token),
 		telegram.WithLogger(logger),
 		telegram.WithClient(NewHttpClient(logger)),
 	)

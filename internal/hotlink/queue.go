@@ -14,14 +14,14 @@ type MediaTask struct {
 }
 
 type MediaTaskResult struct {
-	TaskID      string `json:"task_id"`
-	Ok          bool   `json:"ok"`
-	Error       error  `json:"error,omitempty"`
-	Title       string
-	Description string
+	TaskID      string              `json:"task_id"`
+	Ok          bool                `json:"ok"`
+	Error       *MediaTaskError     `json:"error,omitempty"`
+	Title       string              `json:"title,omitempty"`
+	Description string              `json:"description,omitempty"`
 	Messages    []*telegram.Message `json:"messages,omitempty"`
 }
 
 type Queue interface {
-	Consume(context.Context, MediaTask, chan MediaTaskResult) error
+	Consume(context.Context, MediaTask) (chan MediaTaskResult, error)
 }
